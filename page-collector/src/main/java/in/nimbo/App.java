@@ -116,15 +116,13 @@ public class App {
         builder.setConcurrentRequests(elasticConfig.getConcurrentRequests());
         builder.setBackoffPolicy(BackoffPolicy.constantBackoff(TimeValue.timeValueSeconds(elasticConfig.getBackoffDelaySeconds()),
                 elasticConfig.getBackoffMaxRetry()));
-        BulkProcessor bulkProcessor = builder.build();
-        appLogger.info("ElasticSearch started");
-        return bulkProcessor;
+        return builder.build();
     }
 
     private void startApp() {
         kafkaService.schedule();
         appLogger.info("Schedule service started");
-        cliLogger.info("Welcome to Search Engine\n");
+        cliLogger.info("Welcome to Page Collector\n");
         cliLogger.info("engine> ");
         Scanner in = new Scanner(System.in);
         while (in.hasNext()) {
