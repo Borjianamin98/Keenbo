@@ -48,7 +48,6 @@ public class App {
                 .config("spark.kryoserializer.buffer", "1024k")
                 .appName(pageRankConfig.getAppName())
                 .getOrCreate();
-        
         spark.sparkContext().conf().set("es.nodes", pageRankConfig.getEsNodes());
         spark.sparkContext().conf().set("es.write.operation", pageRankConfig.getEsWriteOperation());
         spark.sparkContext().conf().set("es.mapping.id", "id");
