@@ -1,3 +1,4 @@
+export ZOOKEEPER_HOST="slave-1"
 export HBASE_TABLE="page"
 export ELASTICSEARCH_NODE="localhost"
 export ELASTICSEARCH_INDEX="search"
@@ -43,12 +44,12 @@ fi
 
 # initialize kafka
 echo 'Delete kafka topics'
-/var/local/kafka/bin/kafka-topics.sh --delete --topic $KAFKA_TOPIC_LINKS --zookeeper localhost:2181 >/dev/null
-/var/local/kafka/bin/kafka-topics.sh --delete --topic $KAFKA_TOPIC_PAGES --zookeeper localhost:2181 >/dev/null
+/var/local/kafka/bin/kafka-topics.sh --delete --topic $KAFKA_TOPIC_LINKS --zookeeper localhost:2181
+/var/local/kafka/bin/kafka-topics.sh --delete --topic $KAFKA_TOPIC_PAGES --zookeeper localhost:2181
 sleep 3
 echo 'Create kafka topics'
-/var/local/kafka/bin/kafka-topics.sh --create --topic $KAFKA_TOPIC_LINKS --partitions 21 --replication-factor 2 --zookeeper localhost:2181 >/dev/null
-/var/local/kafka/bin/kafka-topics.sh --create --topic $KAFKA_TOPIC_PAGES --partitions 21 --replication-factor 2 compression.type=gzip --zookeeper localhost:2181 >/dev/null
+/var/local/kafka/bin/kafka-topics.sh --create --topic $KAFKA_TOPIC_LINKS --partitions 21 --replication-factor 2 --zookeeper $ZOOKEEPER_HOST:2181
+/var/local/kafka/bin/kafka-topics.sh --create --topic $KAFKA_TOPIC_PAGES --partitions 21 --replication-factor 2 compression.type=gzip --zookeeper $ZOOKEEPER_HOST:2181
 
 status=$?
 if [ $status -ne 0 ]
