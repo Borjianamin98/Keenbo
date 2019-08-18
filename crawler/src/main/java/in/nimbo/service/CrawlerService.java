@@ -24,7 +24,7 @@ public class CrawlerService {
     private final Counter crawledCounter;
     private final Timer redisContainTimer;
 
-    private Logger appLogger = LoggerFactory.getLogger("app");
+    private Logger appLogger = LoggerFactory.getLogger("crawler");
     private Logger parserLogger = LoggerFactory.getLogger("parser");
     private Cache<String, LocalDateTime> cache;
     private RedisDAO redisDAO;

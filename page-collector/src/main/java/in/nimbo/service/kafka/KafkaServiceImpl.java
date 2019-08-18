@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class KafkaServiceImpl implements KafkaService {
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("collector");
     private KafkaConfig config;
     private CollectorService collectorService;
 

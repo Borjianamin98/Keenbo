@@ -26,8 +26,8 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class App {
-    private static Logger appLogger = LoggerFactory.getLogger("app");
     private static Logger cliLogger = LoggerFactory.getLogger("cli");
+    private static Logger appLogger = LoggerFactory.getLogger("crawler");
     private KafkaService kafkaService;
 
     public App(KafkaService kafkaService) {

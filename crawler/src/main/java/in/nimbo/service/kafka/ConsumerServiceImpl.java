@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConsumerServiceImpl implements ConsumerService {
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("crawler");
     private BlockingQueue<String> messageQueue;
     private Consumer<String, String> consumer;
     private AtomicBoolean closed;

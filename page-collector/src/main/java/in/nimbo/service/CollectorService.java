@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CollectorService {
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("collector");
     private HBaseDAO hBaseDAO;
     private ElasticDAO elasticDAO;
 

@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProducerServiceImpl implements ProducerService {
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("crawler");
     private KafkaConfig config;
     private BlockingQueue<String> messageQueue;
     private Producer<String, String> linkProducer;

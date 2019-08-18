@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ProducerServiceImpl implements ProducerService {
     private CollectorService collectorService;
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("collector");
     private KafkaConfig config;
     private BlockingQueue<Page> messageQueue;
     private Producer<String, Page> pageProducer;

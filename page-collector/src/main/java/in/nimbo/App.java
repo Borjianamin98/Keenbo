@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 
 public class App {
     private static final String INVALID_INPUT = "invalid input";
-    private static Logger appLogger = LoggerFactory.getLogger("app");
     private static Logger cliLogger = LoggerFactory.getLogger("cli");
+    private static Logger appLogger = LoggerFactory.getLogger("collector");
     private RestHighLevelClient restHighLevelClient;
     private KafkaService kafkaService;
     private HBaseDAO hBaseDAO;

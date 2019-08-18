@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConsumerServiceImpl implements ConsumerService {
-    private Logger logger = LoggerFactory.getLogger("app");
+    private Logger logger = LoggerFactory.getLogger("collector");
     private BlockingQueue<Page> messageQueue;
     private Consumer<String, Page> consumer;
     private AtomicBoolean closed;

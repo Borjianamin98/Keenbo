@@ -28,7 +28,7 @@ import java.util.*;
 
 public class ParserService {
     private Logger logger = LoggerFactory.getLogger("parser");
-    private Logger appLogger = LoggerFactory.getLogger("app");
+    private Logger appLogger = LoggerFactory.getLogger("crawler");
     private ProjectConfig projectConfig;
 
     public ParserService(ProjectConfig projectConfig) {
