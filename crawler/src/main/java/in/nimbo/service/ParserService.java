@@ -174,8 +174,6 @@ public class ParserService {
             appLogger.warn("Unable to reverse link: {}", link);
         } catch (LanguageDetectException e) {
             logger.warn("Cannot detect language of site: {}", link);
-        } catch (Exception e) {
-            appLogger.error(e.getMessage(), e);
         }
         throw new ParseLinkException();
     }

@@ -80,7 +80,7 @@ public class ProducerServiceImpl implements ProducerService {
         } catch (ParseLinkException | InvalidLinkException ignored) {
             // Ignore link
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Uncached exception", e);
         }
     }
 }
