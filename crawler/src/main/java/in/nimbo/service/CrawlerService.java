@@ -75,8 +75,6 @@ public class CrawlerService {
             }
         } catch (URISyntaxException e) {
             parserLogger.warn("Illegal URL format: " + siteLink, e);
-        } catch (Exception e) {
-            appLogger.error(e.getMessage(), e);
         } finally {
             LocalDateTime end = LocalDateTime.now();
             long duration = start.until(end, ChronoUnit.MILLIS);
