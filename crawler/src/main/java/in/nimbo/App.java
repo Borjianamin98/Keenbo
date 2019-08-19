@@ -94,6 +94,7 @@ public class App {
 
     private void stopApp() {
         kafkaService.stopSchedule();
+        appLogger.info("Application stopped");
     }
 
     private static void initReporter(ProjectConfig projectConfig) {

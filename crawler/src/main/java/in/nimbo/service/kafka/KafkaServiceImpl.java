@@ -18,13 +18,13 @@ import java.util.concurrent.*;
 
 public class KafkaServiceImpl implements KafkaService {
     private Logger logger = LoggerFactory.getLogger("crawler");
+    private ScheduledExecutorService threadMonitorService;
     private KafkaConfig kafkaConfig;
     private CrawlerService crawlerService;
     private BlockingQueue<String> messageQueue;
     private ConsumerService consumerService;
     private List<ProducerService> producerServices;
     private CountDownLatch countDownLatch;
-    private ThreadsMonitor threadsMonitor;
 
     public KafkaServiceImpl(CrawlerService crawlerService, KafkaConfig kafkaConfig) {
         this.crawlerService = crawlerService;
@@ -74,7 +74,6 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void stopSchedule() {
         logger.info("Stop schedule service");
-
         consumerService.close();
         for (ProducerService producerService : producerServices) {
             producerService.close();
@@ -93,6 +92,7 @@ public class KafkaServiceImpl implements KafkaService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        threadMonitorService.shutdown();
     }
 
     @Override
@@ -104,9 +104,8 @@ public class KafkaServiceImpl implements KafkaService {
     }
 
     private void startThreadsMonitoring(ThreadPoolExecutor threadPoolExecutor, ThreadGroup threadGroup) {
-        threadsMonitor = new ThreadsMonitor(threadPoolExecutor, threadGroup);
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(threadsMonitor, 0, 15, TimeUnit.SECONDS);
-        scheduledExecutorService.shutdown();
+        ThreadsMonitor threadsMonitor = new ThreadsMonitor(threadPoolExecutor, threadGroup);
+        threadMonitorService = Executors.newScheduledThreadPool(1);
+        threadMonitorService.scheduleAtFixedRate(threadsMonitor, 0, 10, TimeUnit.SECONDS);
     }
 }

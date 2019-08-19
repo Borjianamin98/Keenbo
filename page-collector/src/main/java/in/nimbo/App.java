@@ -143,6 +143,7 @@ public class App {
         } catch (IOException e) {
             appLogger.warn("Unable to close resources", e);
         }
+        appLogger.info("Application stopped");
     }
 
     private static void initReporter(ProjectConfig projectConfig) {
