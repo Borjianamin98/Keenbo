@@ -32,8 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -149,7 +147,7 @@ public class App {
 
     private static void initReporter(ProjectConfig projectConfig) {
         MetricRegistry metricRegistry = SharedMetricRegistries.setDefault(projectConfig.getReportName());
-        JmxReporter reporter = JmxReporter.forRegistry(metricRegistry).inDomain(hostName)
+        JmxReporter reporter = JmxReporter.forRegistry(metricRegistry)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .convertRatesTo(TimeUnit.MILLISECONDS)
                 .build();
