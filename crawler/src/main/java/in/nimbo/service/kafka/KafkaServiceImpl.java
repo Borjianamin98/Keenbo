@@ -1,5 +1,9 @@
 package in.nimbo.service.kafka;
 
+import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.entity.Page;
 import in.nimbo.common.exception.KafkaServiceException;
@@ -31,6 +35,14 @@ public class KafkaServiceImpl implements KafkaService {
         this.kafkaConfig = kafkaConfig;
         producerServices = new ArrayList<>();
         countDownLatch = new CountDownLatch(kafkaConfig.getLinkProducerCount() + 1);
+        MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
+        metricRegistry.register(MetricRegistry.name(KafkaServiceImpl.class, "localMessageQueueSize"),
+                new CachedGauge<Integer>(5, TimeUnit.SECONDS) {
+                    @Override
+                    protected Integer loadValue() {
+                        return messageQueue.size();
+                    }
+                });
     }
 
     /**
