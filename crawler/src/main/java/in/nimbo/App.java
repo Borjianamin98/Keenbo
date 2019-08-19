@@ -21,7 +21,7 @@ import redis.clients.jedis.JedisCluster;
 
 import java.time.LocalDateTime;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class App {
     private static Logger cliLogger = LoggerFactory.getLogger("cli");
@@ -32,7 +32,7 @@ public class App {
         this.kafkaService = kafkaService;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         loadLanguageDetector();
 
         ProjectConfig projectConfig = ProjectConfig.load();
