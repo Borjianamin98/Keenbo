@@ -148,12 +148,6 @@ public class App {
     }
 
     private static void initReporter(ProjectConfig projectConfig) {
-        String hostName = projectConfig.getReportName();
-        try {
-            hostName = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            appLogger.info("Unable to detect host name. Use default value");
-        }
         MetricRegistry metricRegistry = SharedMetricRegistries.setDefault(projectConfig.getReportName());
         JmxReporter reporter = JmxReporter.forRegistry(metricRegistry).inDomain(hostName)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
