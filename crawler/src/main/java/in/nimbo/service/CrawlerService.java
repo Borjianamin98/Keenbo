@@ -13,7 +13,7 @@ import in.nimbo.dao.redis.RedisDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -55,6 +55,7 @@ public class CrawlerService {
      */
     public Optional<Page> crawl(String siteLink) {
         try {
+            siteLink = LinkUtility.normalize(siteLink);
             String siteDomain = LinkUtility.getMainDomain(siteLink);
             if (cache.getIfPresent(siteDomain) == null) {
                 cacheMissCounter.inc();
@@ -77,7 +78,7 @@ public class CrawlerService {
                 cacheHitCounter.inc();
                 return Optional.empty();
             }
-        } catch (URISyntaxException e) {
+        } catch (MalformedURLException e) {
             parserLogger.warn("Illegal URL format: " + siteLink, e);
         }
         throw new InvalidLinkException();
