@@ -1,30 +1,51 @@
 package in.nimbo.monitoring;
 
-import com.codahale.metrics.Histogram;
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ThreadsMonitor implements Runnable {
     private ThreadPoolExecutor threadPoolExecutor;
     private ThreadGroup threadGroup;
-    private Histogram waitingThreadsHistogram;
-    private Histogram activeThreadsHistogram;
+    private int waitingThreads = 0;
+    private int activeThreads = 0;
 
     public ThreadsMonitor(ThreadPoolExecutor threadPoolExecutor, ThreadGroup threadGroup) {
         this.threadPoolExecutor = threadPoolExecutor;
         this.threadGroup = threadGroup;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
-        waitingThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "waitingThreadsCounter"));
-        activeThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "runningThreadsCounter"));
+        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "waitingThreadsGauge"),
+                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
+                    @Override
+                    protected Integer loadValue() {
+                        return getWaitingThreads();
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "runningThreadsGauge"),
+                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
+                    @Override
+                    protected Integer loadValue() {
+                        return getActiveThreads();
+                    }
+                });
+    }
+
+    private int getWaitingThreads() {
+        return waitingThreads;
+    }
+
+    private int getActiveThreads() {
+        return activeThreads;
     }
 
     @Override
     public void run() {
-        int waitingThreads = 0;
-        int activeThreads = 0;
+        activeThreads = 0;
+        waitingThreads = 0;
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
         for (Thread t : threadSet) {
             if (t.getThreadGroup().equals(threadGroup)) {
@@ -37,7 +58,5 @@ public class ThreadsMonitor implements Runnable {
                 }
             }
         }
-        waitingThreadsHistogram.update(waitingThreads);
-        activeThreadsHistogram.update(activeThreads);
     }
 }
