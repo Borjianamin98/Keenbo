@@ -65,7 +65,7 @@ public class ParserService {
             logger.warn("Response is not OK. Url: \"{}\" StatusCode: {}", e.getUrl(), e.getStatusCode());
         } catch (SocketTimeoutException e) {
             logger.warn("Connection time out with jsoup: {}", link);
-        } catch (IOException e) {
+        } catch (StringIndexOutOfBoundsException | IOException e) {
             logger.warn("Unable to parse page with jsoup: {}", link);
         }
         return Optional.empty();
