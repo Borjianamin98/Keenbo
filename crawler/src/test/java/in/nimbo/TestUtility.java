@@ -1,5 +1,7 @@
 package in.nimbo;
 
+import com.codahale.metrics.SharedMetricRegistries;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -9,6 +11,12 @@ import java.nio.file.Path;
  * Utility class for do same work between tests
  */
 public class TestUtility {
+    public static void setMetricRegistry() {
+        if (SharedMetricRegistries.tryGetDefault() == null) {
+            SharedMetricRegistries.setDefault("kafkaTest");
+        }
+    }
+
     /**
      * get content a file as string
      *

@@ -75,7 +75,7 @@ public class ParserService {
      * @param document document contain a site contents
      * @return list of all anchors in a document
      */
-    Set<Anchor> getAnchors(Document document) {
+    private Set<Anchor> getAnchors(Document document) {
         Set<Anchor> anchors = new HashSet<>();
         Elements linkElements = document.getElementsByTag("a");
         Map<String, Integer> map = new HashMap<>();

@@ -1,6 +1,5 @@
 package in.nimbo.service;
 
-import com.codahale.metrics.SharedMetricRegistries;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import in.nimbo.TestUtility;
@@ -50,7 +49,7 @@ public class CrawlerServiceTest {
     public static void init() {
         parserService = spy(new ParserService(new ProjectConfig()));
         projectConfig = ProjectConfig.load();
-        SharedMetricRegistries.setDefault("Keenbo");
+        TestUtility.setMetricRegistry();
     }
 
     @Before
