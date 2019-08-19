@@ -55,12 +55,11 @@ public class CrawlerService {
      */
     public Optional<Page> crawl(String siteLink) {
         try {
-            siteLink = LinkUtility.normalize(siteLink);
             String siteDomain = LinkUtility.getMainDomain(siteLink);
             if (cache.getIfPresent(siteDomain) == null) {
                 cacheMissCounter.inc();
                 Timer.Context redisContainTimerContext = redisContainTimer.time();
-                boolean contains = redisDAO.contains(siteLink);
+                boolean contains = isCrawled(siteLink);
                 redisContainTimerContext.stop();
                 if (!contains) {
                     crawledLinksCounter.inc();
@@ -82,5 +81,9 @@ public class CrawlerService {
             parserLogger.warn("Illegal URL format: " + siteLink, e);
         }
         throw new InvalidLinkException();
+    }
+
+    public boolean isCrawled(String link) {
+        return redisDAO.contains(link);
     }
 }
