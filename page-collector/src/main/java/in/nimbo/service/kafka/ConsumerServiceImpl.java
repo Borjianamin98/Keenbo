@@ -1,9 +1,11 @@
 package in.nimbo.service.kafka;
 
 import in.nimbo.common.entity.Page;
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,14 @@ public class ConsumerServiceImpl implements ConsumerService {
                     while (!isAdded && !closed.get()) {
                         isAdded = messageQueue.offer(record.value(), 100, TimeUnit.MILLISECONDS);
                     }
+                }
+
+                try {
+                    if (records.count() > 0) {
+                        consumer.commitSync();
+                    }
+                } catch (TimeoutException | CommitFailedException e) {
+                    logger.warn("Unable to commit changes in page collector consumer");
                 }
             }
         } catch (Exception e) {

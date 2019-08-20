@@ -4,11 +4,13 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +75,14 @@ public class ShufflerService implements Runnable, Closeable {
                     }
                 }
                 lastSize = size;
+
+                try {
+                    if (records.count() > 0) {
+                        shufflerConsumer.commitSync();
+                    }
+                } catch (TimeoutException | CommitFailedException e) {
+                    logger.warn("Unable to commit changes in shuffler consumer");
+                }
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

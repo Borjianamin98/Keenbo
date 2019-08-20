@@ -1,8 +1,10 @@
 package in.nimbo.service.kafka;
 
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +40,13 @@ public class ConsumerServiceImpl implements ConsumerService {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(10));
                 for (ConsumerRecord<String, String> record : records) {
                     messageQueue.put(record.value());
+                }
+                try {
+                    if (records.count() > 0) {
+                        consumer.commitSync();
+                    }
+                } catch (TimeoutException | CommitFailedException e) {
+                    logger.warn("Unable to commit changes in link consumer");
                 }
             }
         } catch (InterruptedException e) {
