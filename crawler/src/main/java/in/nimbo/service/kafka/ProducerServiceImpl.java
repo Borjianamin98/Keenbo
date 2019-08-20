@@ -19,11 +19,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class PageProducerService implements ProducerService {
+public class ProducerServiceImpl implements ProducerService {
     private Logger logger = LoggerFactory.getLogger("crawler");
     private KafkaConfig config;
     private BlockingQueue<String> messageQueue;
-    private BlockingQueue<String> shuffleQueue;
+    private Producer<String, String> shufflerProducer;
     private Producer<String, Page> pageProducer;
     private CrawlerService crawlerService;
 
@@ -32,13 +32,13 @@ public class PageProducerService implements ProducerService {
 
     private Counter allLinksCounter;
 
-    public PageProducerService(KafkaConfig config,
-                               BlockingQueue<String> messageQueue, BlockingQueue<String> shuffleQueue,
-                               Producer<String, Page> pageProducer, CrawlerService crawlerService, CountDownLatch countDownLatch) {
+    public ProducerServiceImpl(KafkaConfig config, BlockingQueue<String> messageQueue,
+                               Producer<String, Page> pageProducer, Producer<String, String> shufflerProducer,
+                               CrawlerService crawlerService, CountDownLatch countDownLatch) {
         this.config = config;
         this.messageQueue = messageQueue;
-        this.shuffleQueue = shuffleQueue;
         this.pageProducer = pageProducer;
+        this.shufflerProducer = shufflerProducer;
         this.crawlerService = crawlerService;
         this.countDownLatch = countDownLatch;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
@@ -63,6 +63,8 @@ public class PageProducerService implements ProducerService {
         } finally {
             if (pageProducer != null)
                 pageProducer.close();
+            if (shufflerProducer != null)
+                shufflerProducer.close();
             logger.info("Page Producer service stopped successfully");
             countDownLatch.countDown();
         }
@@ -76,12 +78,12 @@ public class PageProducerService implements ProducerService {
                 for (Anchor anchor : page.getAnchors()) {
                     String anchorHref = anchor.getHref();
                     if (!anchorHref.contains("#")) {
-                        shuffleQueue.put(anchorHref);
+                        shufflerProducer.send(new ProducerRecord<>(config.getShufflerTopic(), anchorHref, anchorHref));
                     }
                 }
                 pageProducer.send(new ProducerRecord<>(config.getPageTopic(), page.getLink(), page));
             } else {
-                shuffleQueue.put(link);
+                shufflerProducer.send(new ProducerRecord<>(config.getShufflerTopic(), link, link));
             }
         } catch (ParseLinkException | InvalidLinkException ignored) {
             // Ignore link

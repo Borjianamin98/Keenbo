@@ -30,11 +30,10 @@ import static org.mockito.Mockito.*;
 
 public class PageProducerServiceTest {
     private BlockingQueue<String> messageQueue;
-    private BlockingQueue<String> shuffleQueue;
     private ProducerService producerService;
     private CountDownLatch countDownLatch;
     private CrawlerService crawlerService;
-    private MockProducer<String, String> linkProducer;
+    private MockProducer<String, String> shufflerProducer;
     private MockProducer<String, Page> pageProducer;
 
     @BeforeClass
@@ -45,14 +44,13 @@ public class PageProducerServiceTest {
     @Before
     public void beforeEachTest() {
         messageQueue = spy(new LinkedBlockingQueue<>());
-        shuffleQueue = spy(new LinkedBlockingQueue<>());
         countDownLatch = new CountDownLatch(1);
         crawlerService = mock(CrawlerService.class);
         KafkaConfig kafkaConfig = KafkaConfig.load();
-        linkProducer = new MockProducer<>(true, new StringSerializer(), new StringSerializer());
+        shufflerProducer = new MockProducer<>(true, new StringSerializer(), new StringSerializer());
         pageProducer = new MockProducer<>(true, new StringSerializer(), new PageSerializer());
-        producerService = new PageProducerService(kafkaConfig, messageQueue,
-                shuffleQueue, pageProducer, crawlerService, countDownLatch);
+        producerService = new ProducerServiceImpl(kafkaConfig, messageQueue,
+                pageProducer, shufflerProducer, crawlerService, countDownLatch);
     }
 
     @Test
@@ -76,7 +74,7 @@ public class PageProducerServiceTest {
             }
         }).start();
         producerService.run();
-        for (ProducerRecord<String, String> record : linkProducer.history()) {
+        for (ProducerRecord<String, String> record : shufflerProducer.history()) {
             assertEquals(record.key(), record.value());
             assertTrue(crawledLinks.contains(record.value()));
         }
