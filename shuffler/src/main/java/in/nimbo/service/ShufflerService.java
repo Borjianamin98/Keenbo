@@ -56,28 +56,38 @@ public class ShufflerService implements Runnable, Closeable {
     @Override
     public void run() {
         try {
+            System.out.println(1);
             int retry = 0;
             int lastSize = -1;
             while (!closed.get()) {
+                System.out.println(2);
                 ConsumerRecords<String, String> records = shufflerConsumer.poll(Duration.ofMillis(kafkaConfig.getMaxPollDuration()));
+                System.out.println(3);
                 for (ConsumerRecord<String, String> record : records) {
                     shuffleList.add(record.value());
+                    System.out.println(4);
                 }
                 int size = shuffleList.size();
+                System.out.println(5);
                 if (size == maxShuffleQueueSize || retry >= 10) {
+                    System.out.println(6);
                     processList();
                     retry = 0;
                 } else {
                     if (size == lastSize) {
+                        System.out.println(7);
                         retry++;
                     } else {
+                        System.out.println(8);
                         retry = 0;
                     }
                 }
+                System.out.println(9);
                 lastSize = size;
 
                 try {
                     if (records.count() > 0) {
+                        System.out.println(10);
                         shufflerConsumer.commitSync();
                     }
                 } catch (TimeoutException | CommitFailedException e) {
@@ -98,10 +108,12 @@ public class ShufflerService implements Runnable, Closeable {
     }
 
     private String[] shuffle(List<String> shuffleList) {
+        System.out.println(20);
         String[] arr = shuffleList.toArray(new String[0]);
         for (int i = shuffleList.size(); i > 1; i--) {
             swap(arr, i - 1, random.nextInt(i));
         }
+        System.out.println(21);
         return arr;
     }
 
