@@ -40,12 +40,12 @@ public class LinkUtilityTest {
     }
 
     @Test(expected = URISyntaxException.class)
-    public void testGetMainDomainInvalidUrl() throws URISyntaxException {
+    public void testGetMainDomainInvalidUrl() throws MalformedURLException {
         LinkUtility.getMainDomain("invalid");
     }
 
     @Test(expected = URISyntaxException.class)
-    public void testGetMainDomainNullUrl() throws URISyntaxException {
+    public void testGetMainDomainNullUrl() throws MalformedURLException {
         LinkUtility.getMainDomain("https://salam");
     }
 

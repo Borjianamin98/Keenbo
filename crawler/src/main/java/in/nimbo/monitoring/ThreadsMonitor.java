@@ -57,10 +57,11 @@ public class ThreadsMonitor implements Runnable {
         waitingThreads = 0;
         totalThreads = 0;
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-        for (Thread t : threadSet) {
-            if (t.getThreadGroup().equals(threadGroup)) {
+        for (Thread thread : threadSet) {
+            if (thread.getThreadGroup().equals(threadGroup) && thread.getName().equals(threadGroup.getName())) {
+                System.out.println(thread.toString());
                 totalThreads++;
-                Thread.State state = t.getState();
+                Thread.State state = thread.getState();
                 if (state.equals(Thread.State.RUNNABLE)) {
                     activeThreads++;
                 }

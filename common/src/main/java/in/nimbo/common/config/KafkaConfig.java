@@ -12,6 +12,7 @@ public class KafkaConfig {
     private Properties pageConsumerProperties;
     private Properties pageProducerProperties;
     private Properties linkProducerProperties;
+    private String serviceName;
     private String linkTopic;
     private String pageTopic;
     private int pageProducerCount;
@@ -27,6 +28,7 @@ public class KafkaConfig {
             config.setPageConsumerProperties(Config.loadProperties("kafka/page-consumer.properties"));
             config.setLinkProducerProperties(Config.loadProperties("kafka/link-producer.properties"));
             config.setPageProducerProperties(Config.loadProperties("kafka/page-producer.properties"));
+            config.setServiceName(configuration.getString("service.name"));
             config.setLinkTopic(configuration.getString("link.topic.name"));
             config.setPageTopic(configuration.getString("page.topic.name"));
             config.setPageProducerCount(configuration.getInt("page.producer.count"));
@@ -117,5 +119,13 @@ public class KafkaConfig {
 
     public void setLocalPageQueueSize(int localPageQueueSize) {
         this.localPageQueueSize = localPageQueueSize;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 }

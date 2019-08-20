@@ -57,13 +57,13 @@ public class KafkaServiceImpl implements KafkaService {
      */
     @Override
     public void schedule() {
-        ThreadGroup threadGroup = new ThreadGroup("Kafka");
+        ThreadGroup threadGroup = new ThreadGroup(kafkaConfig.getServiceName());
         startThreadsMonitoring(threadGroup);
 
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
         consumerService = new ConsumerServiceImpl(kafkaConsumer, messageQueue, countDownLatch);
-        Thread consumerThread = new Thread(threadGroup, consumerService);
+        Thread consumerThread = new Thread(threadGroup, consumerService, kafkaConfig.getServiceName());
         kafkaServices.add(consumerThread);
         consumerThread.start();
 
@@ -72,7 +72,7 @@ public class KafkaServiceImpl implements KafkaService {
             ProducerService pageProducerService = new PageProducerService(kafkaConfig, messageQueue, shuffleQueue,
                     pageProducer, crawlerService, countDownLatch);
             producerServices.add(pageProducerService);
-            Thread pageProducerThread = new Thread(threadGroup, pageProducerService);
+            Thread pageProducerThread = new Thread(threadGroup, pageProducerService, kafkaConfig.getServiceName());
             kafkaServices.add(pageProducerThread);
             pageProducerThread.start();
         }
@@ -80,7 +80,7 @@ public class KafkaServiceImpl implements KafkaService {
         KafkaProducer<String, String> linkProducer = new KafkaProducer<>(kafkaConfig.getLinkProducerProperties());
         ProducerService linkProducerService = new LinkProducerService(kafkaConfig, shuffleQueue, linkProducer, countDownLatch);
         producerServices.add(linkProducerService);
-        Thread linkProducerThread = new Thread(threadGroup, linkProducerService);
+        Thread linkProducerThread = new Thread(threadGroup, linkProducerService, kafkaConfig.getServiceName());
         kafkaServices.add(linkProducerThread);
         linkProducerThread.start();
     }
