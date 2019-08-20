@@ -5,17 +5,15 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadsMonitor implements Runnable {
-    private ThreadPoolExecutor threadPoolExecutor;
     private ThreadGroup threadGroup;
     private int waitingThreads = 0;
     private int activeThreads = 0;
+    private int totalThreads = 0;
 
-    public ThreadsMonitor(ThreadPoolExecutor threadPoolExecutor, ThreadGroup threadGroup) {
-        this.threadPoolExecutor = threadPoolExecutor;
+    public ThreadsMonitor(ThreadGroup threadGroup) {
         this.threadGroup = threadGroup;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "waitingThreadsGauge"),
@@ -32,6 +30,17 @@ public class ThreadsMonitor implements Runnable {
                         return getActiveThreads();
                     }
                 });
+        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "totalThreadsGauge"),
+                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
+                    @Override
+                    protected Integer loadValue() {
+                        return getTotalThreads();
+                    }
+                });
+    }
+
+    private Integer getTotalThreads() {
+        return totalThreads;
     }
 
     private int getWaitingThreads() {
@@ -46,9 +55,11 @@ public class ThreadsMonitor implements Runnable {
     public void run() {
         activeThreads = 0;
         waitingThreads = 0;
+        totalThreads = 0;
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
         for (Thread t : threadSet) {
             if (t.getThreadGroup().equals(threadGroup)) {
+                totalThreads++;
                 Thread.State state = t.getState();
                 if (state.equals(Thread.State.RUNNABLE)) {
                     activeThreads++;

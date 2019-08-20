@@ -20,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -95,7 +94,7 @@ public class CrawlerServiceTest {
         when(redisDAO.contains(link)).thenReturn(false);
         try {
             cache.put(LinkUtility.getMainDomain(link), LocalDateTime.now());
-        } catch (URISyntaxException e) {
+        } catch (MalformedURLException e) {
             Assert.fail();
         }
         Optional<Page> returnedPage = crawlerService.crawl(link);

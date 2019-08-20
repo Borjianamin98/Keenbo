@@ -25,6 +25,7 @@ public class KafkaServiceImpl implements KafkaService {
     private KafkaConfig kafkaConfig;
     private CrawlerService crawlerService;
     private BlockingQueue<String> messageQueue;
+    private BlockingQueue<String> shuffleQueue;
     private ConsumerService consumerService;
     private List<ProducerService> producerServices;
     private CountDownLatch countDownLatch;
@@ -33,7 +34,7 @@ public class KafkaServiceImpl implements KafkaService {
         this.crawlerService = crawlerService;
         this.kafkaConfig = kafkaConfig;
         producerServices = new ArrayList<>();
-        countDownLatch = new CountDownLatch(kafkaConfig.getLinkProducerCount() + 1);
+        countDownLatch = new CountDownLatch(kafkaConfig.getLinkProducerCount() + 2);
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         metricRegistry.register(MetricRegistry.name(KafkaServiceImpl.class, "localMessageQueueSize"),
                 new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
@@ -52,12 +53,13 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void schedule() {
         final ThreadGroup threadGroup = new ThreadGroup("workers");
-        int numberOfThreads = kafkaConfig.getLinkProducerCount() + 1;
+        int numberOfThreads = kafkaConfig.getLinkProducerCount() + 2;
         ThreadPoolExecutor executorService = new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(), r -> new Thread(threadGroup, r));
-        startThreadsMonitoring(executorService, threadGroup);
+        startThreadsMonitoring(threadGroup);
 
         messageQueue = new ArrayBlockingQueue<>(kafkaConfig.getLocalLinkQueueSize());
+        shuffleQueue = new ArrayBlockingQueue<>(1000000);
         // Prepare consumer
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
@@ -66,16 +68,18 @@ public class KafkaServiceImpl implements KafkaService {
 
         // Prepare producer
         for (int i = 0; i < kafkaConfig.getLinkProducerCount(); i++) {
-            KafkaProducer<String, String> linkProducer = new KafkaProducer<>(kafkaConfig.getLinkProducerProperties());
             KafkaProducer<String, Page> pageProducer = new KafkaProducer<>(kafkaConfig.getPageProducerProperties());
-            ProducerService producerService =
-                    new ProducerServiceImpl(kafkaConfig, messageQueue,
-                            linkProducer, pageProducer,
-                            crawlerService,
-                            countDownLatch);
+            ProducerService producerService = new PageProducerService(kafkaConfig, messageQueue, shuffleQueue,
+                    pageProducer, crawlerService, countDownLatch);
             producerServices.add(producerService);
             executorService.submit(producerService);
         }
+
+        KafkaProducer<String, String> linkProducer = new KafkaProducer<>(kafkaConfig.getLinkProducerProperties());
+        ProducerService producerService = new LinkProducerService(kafkaConfig, shuffleQueue, linkProducer, countDownLatch);
+        producerServices.add(producerService);
+        executorService.submit(producerService);
+
         executorService.shutdown();
     }
 
@@ -97,6 +101,9 @@ public class KafkaServiceImpl implements KafkaService {
                 for (String message : messageQueue) {
                     producer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), message, message));
                 }
+                for (String message : shuffleQueue) {
+                    producer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), message, message));
+                }
                 producer.flush();
             }
             logger.info("All messages sent to kafka");
@@ -114,8 +121,8 @@ public class KafkaServiceImpl implements KafkaService {
         }
     }
 
-    private void startThreadsMonitoring(ThreadPoolExecutor threadPoolExecutor, ThreadGroup threadGroup) {
-        ThreadsMonitor threadsMonitor = new ThreadsMonitor(threadPoolExecutor, threadGroup);
+    private void startThreadsMonitoring(ThreadGroup threadGroup) {
+        ThreadsMonitor threadsMonitor = new ThreadsMonitor(threadGroup);
         threadMonitorService = Executors.newScheduledThreadPool(1);
         threadMonitorService.scheduleAtFixedRate(threadsMonitor, 0, 10, TimeUnit.SECONDS);
     }

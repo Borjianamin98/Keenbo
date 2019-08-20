@@ -20,23 +20,26 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ProducerServiceImpl implements ProducerService {
+public class PageProducerService implements ProducerService {
     private Logger logger = LoggerFactory.getLogger("crawler");
     private KafkaConfig config;
     private BlockingQueue<String> messageQueue;
-    private Producer<String, String> linkProducer;
+    private BlockingQueue<String> shuffleQueue;
     private Producer<String, Page> pageProducer;
     private CrawlerService crawlerService;
+
     private AtomicBoolean closed = new AtomicBoolean(false);
     private CountDownLatch countDownLatch;
+
     private Counter allLinksCounter;
 
-    public ProducerServiceImpl(KafkaConfig config, BlockingQueue<String> messageQueue,
-                               Producer<String, String> linkProducer, Producer<String, Page> pageProducer,
+    public PageProducerService(KafkaConfig config,
+                               BlockingQueue<String> messageQueue, BlockingQueue<String> shuffleQueue,
+                               Producer<String, Page> pageProducer,
                                CrawlerService crawlerService, CountDownLatch countDownLatch) {
         this.config = config;
         this.messageQueue = messageQueue;
-        this.linkProducer = linkProducer;
+        this.shuffleQueue = shuffleQueue;
         this.pageProducer = pageProducer;
         this.crawlerService = crawlerService;
         this.countDownLatch = countDownLatch;
@@ -64,10 +67,8 @@ public class ProducerServiceImpl implements ProducerService {
         } finally {
             if (pageProducer != null)
                 pageProducer.close();
-            if (linkProducer != null)
-                linkProducer.close();
 
-            logger.info("Producers stopped");
+            logger.info("Page Producer stopped");
             countDownLatch.countDown();
         }
     }
@@ -80,12 +81,12 @@ public class ProducerServiceImpl implements ProducerService {
                 for (Anchor anchor : page.getAnchors()) {
                     String anchorHref = anchor.getHref();
                     if (!anchorHref.contains("#")) {
-                        linkProducer.send(new ProducerRecord<>(config.getLinkTopic(), anchorHref, anchorHref));
+                        shuffleQueue.add(anchorHref);
                     }
                 }
                 pageProducer.send(new ProducerRecord<>(config.getPageTopic(), page.getLink(), page));
             } else {
-                linkProducer.send(new ProducerRecord<>(config.getLinkTopic(), link, link));
+                shuffleQueue.add(link);
             }
         } catch (ParseLinkException | InvalidLinkException ignored) {
             // Ignore link
