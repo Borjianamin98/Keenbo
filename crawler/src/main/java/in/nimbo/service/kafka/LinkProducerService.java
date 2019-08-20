@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,17 +19,15 @@ public class LinkProducerService implements ProducerService {
     private int maxShuffleQueueSize;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
-    private CountDownLatch countDownLatch;
 
     private ThreadLocalRandom random = ThreadLocalRandom.current();
 
     public LinkProducerService(KafkaConfig config, BlockingQueue<String> shuffleQueue, int maxShuffleQueueSize,
-                               Producer<String, String> linkProducer, CountDownLatch countDownLatch) {
+                               Producer<String, String> linkProducer) {
         this.config = config;
         this.shuffleQueue = shuffleQueue;
         this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.linkProducer = linkProducer;
-        this.countDownLatch = countDownLatch;
     }
 
     @Override
@@ -59,13 +56,11 @@ public class LinkProducerService implements ProducerService {
                 TimeUnit.SECONDS.sleep(1);
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            // ignored
         } finally {
             if (linkProducer != null)
                 linkProducer.close();
-
-            logger.info("Link Producer stopped");
-            countDownLatch.countDown();
+            logger.info("Link Producer service stopped successfully");
         }
     }
 

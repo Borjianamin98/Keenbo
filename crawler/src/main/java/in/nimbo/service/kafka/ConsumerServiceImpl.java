@@ -8,23 +8,17 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConsumerServiceImpl implements ConsumerService {
     private Logger logger = LoggerFactory.getLogger("crawler");
     private BlockingQueue<String> messageQueue;
     private Consumer<String, String> consumer;
-    private AtomicBoolean closed;
-    private CountDownLatch countDownLatch;
+    private AtomicBoolean closed = new AtomicBoolean(false);
 
-    public ConsumerServiceImpl(Consumer<String, String> consumer, BlockingQueue<String> messageQueue,
-                               CountDownLatch countDownLatch) {
+    public ConsumerServiceImpl(Consumer<String, String> consumer, BlockingQueue<String> messageQueue) {
         this.consumer = consumer;
         this.messageQueue = messageQueue;
-        closed = new AtomicBoolean(false);
-        this.countDownLatch = countDownLatch;
     }
 
     @Override
@@ -38,19 +32,17 @@ public class ConsumerServiceImpl implements ConsumerService {
             while (!closed.get()) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(10));
                 for (ConsumerRecord<String, String> record : records) {
-                    boolean isAdded = false;
-                    while (!isAdded && !closed.get()) {
-                        isAdded = messageQueue.offer(record.value(), 100, TimeUnit.MILLISECONDS);
-                    }
+                    messageQueue.put(record.value());
                 }
             }
+        } catch (InterruptedException e) {
+            logger.info("Consumer service stopped successfully");
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
+            logger.info("Consumer service stopped with failures");
         } finally {
             if (consumer != null)
                 consumer.close();
-            logger.info("Consumer service stopped");
-            countDownLatch.countDown();
         }
     }
 }

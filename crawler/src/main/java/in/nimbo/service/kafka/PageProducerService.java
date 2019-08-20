@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PageProducerService implements ProducerService {
@@ -29,20 +27,17 @@ public class PageProducerService implements ProducerService {
     private CrawlerService crawlerService;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
-    private CountDownLatch countDownLatch;
 
     private Counter allLinksCounter;
 
     public PageProducerService(KafkaConfig config,
                                BlockingQueue<String> messageQueue, BlockingQueue<String> shuffleQueue,
-                               Producer<String, Page> pageProducer,
-                               CrawlerService crawlerService, CountDownLatch countDownLatch) {
+                               Producer<String, Page> pageProducer, CrawlerService crawlerService) {
         this.config = config;
         this.messageQueue = messageQueue;
         this.shuffleQueue = shuffleQueue;
         this.pageProducer = pageProducer;
         this.crawlerService = crawlerService;
-        this.countDownLatch = countDownLatch;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         allLinksCounter = metricRegistry.counter(MetricRegistry.name(ProducerService.class, "allLinksCounter"));
     }
@@ -56,20 +51,16 @@ public class PageProducerService implements ProducerService {
     public void run() {
         try {
             while (!closed.get()) {
-                String newLink = messageQueue.poll(100, TimeUnit.MILLISECONDS);
-                if (newLink != null) {
-                    handleLink(newLink);
-                    allLinksCounter.inc();
-                }
+                String newLink = messageQueue.take();
+                handleLink(newLink);
+                allLinksCounter.inc();
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            // ignored
         } finally {
             if (pageProducer != null)
                 pageProducer.close();
-
-            logger.info("Page Producer stopped");
-            countDownLatch.countDown();
+            logger.info("Page Producer service stopped successfully");
         }
     }
 
