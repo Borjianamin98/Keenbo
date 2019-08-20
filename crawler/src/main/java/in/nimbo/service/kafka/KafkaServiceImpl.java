@@ -48,6 +48,13 @@ public class KafkaServiceImpl implements KafkaService {
                         return messageQueue.size();
                     }
                 });
+        metricRegistry.register(MetricRegistry.name(KafkaServiceImpl.class, "localShuffleQueueSize"),
+                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
+                    @Override
+                    protected Integer loadValue() {
+                        return shuffleQueue.size();
+                    }
+                });
     }
 
     /**
