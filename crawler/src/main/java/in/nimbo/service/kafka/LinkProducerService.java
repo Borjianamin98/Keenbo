@@ -1,5 +1,8 @@
 package in.nimbo.service.kafka;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -20,6 +23,8 @@ public class LinkProducerService implements ProducerService {
 
     private AtomicBoolean closed = new AtomicBoolean(false);
 
+    private Timer shuffleLinksTimer;
+
     private ThreadLocalRandom random = ThreadLocalRandom.current();
 
     public LinkProducerService(KafkaConfig config, BlockingQueue<String> shuffleQueue, int maxShuffleQueueSize,
@@ -28,6 +33,8 @@ public class LinkProducerService implements ProducerService {
         this.shuffleQueue = shuffleQueue;
         this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.linkProducer = linkProducer;
+        MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
+        shuffleLinksTimer = metricRegistry.timer(MetricRegistry.name(LinkProducerService.class, "shuffleLinksTimer"));
     }
 
     @Override
@@ -79,7 +86,9 @@ public class LinkProducerService implements ProducerService {
     }
 
     private void processQueue() {
+        Timer.Context shuffleLinksTimerContext = shuffleLinksTimer.time();
         String[] shuffledLinks = shuffle(shuffleQueue);
+        shuffleLinksTimerContext.stop();
         for (String link : shuffledLinks) {
             linkProducer.send(new ProducerRecord<>(config.getLinkTopic(), link, link));
         }
