@@ -76,12 +76,12 @@ public class PageProducerService implements ProducerService {
                 for (Anchor anchor : page.getAnchors()) {
                     String anchorHref = anchor.getHref();
                     if (!anchorHref.contains("#")) {
-                        shuffleQueue.add(anchorHref);
+                        shuffleQueue.put(anchorHref);
                     }
                 }
                 pageProducer.send(new ProducerRecord<>(config.getPageTopic(), page.getLink(), page));
             } else {
-                shuffleQueue.add(link);
+                shuffleQueue.put(link);
             }
         } catch (ParseLinkException | InvalidLinkException ignored) {
             // Ignore link
