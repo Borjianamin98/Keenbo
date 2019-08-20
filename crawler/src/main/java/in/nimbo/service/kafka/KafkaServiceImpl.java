@@ -30,10 +30,15 @@ public class KafkaServiceImpl implements KafkaService {
     private List<ProducerService> producerServices;
     private CountDownLatch countDownLatch;
 
+    private List<Thread> kafkaServices;
+
     public KafkaServiceImpl(CrawlerService crawlerService, KafkaConfig kafkaConfig) {
         this.crawlerService = crawlerService;
         this.kafkaConfig = kafkaConfig;
         producerServices = new ArrayList<>();
+        kafkaServices = new ArrayList<>();
+        messageQueue = new ArrayBlockingQueue<>(kafkaConfig.getLocalLinkQueueSize());
+        shuffleQueue = new ArrayBlockingQueue<>(1000000);
         countDownLatch = new CountDownLatch(kafkaConfig.getLinkProducerCount() + 2);
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         metricRegistry.register(MetricRegistry.name(KafkaServiceImpl.class, "localMessageQueueSize"),
@@ -52,35 +57,32 @@ public class KafkaServiceImpl implements KafkaService {
      */
     @Override
     public void schedule() {
-        final ThreadGroup threadGroup = new ThreadGroup("workers");
-        int numberOfThreads = kafkaConfig.getLinkProducerCount() + 2;
-        ThreadPoolExecutor executorService = new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(), r -> new Thread(threadGroup, r));
+        ThreadGroup threadGroup = new ThreadGroup("Kafka");
         startThreadsMonitoring(threadGroup);
 
-        messageQueue = new ArrayBlockingQueue<>(kafkaConfig.getLocalLinkQueueSize());
-        shuffleQueue = new ArrayBlockingQueue<>(1000000);
-        // Prepare consumer
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
         consumerService = new ConsumerServiceImpl(kafkaConsumer, messageQueue, countDownLatch);
-        executorService.submit(consumerService);
+        Thread consumerThread = new Thread(threadGroup, consumerService);
+        kafkaServices.add(consumerThread);
+        consumerThread.start();
 
-        // Prepare producer
         for (int i = 0; i < kafkaConfig.getLinkProducerCount(); i++) {
             KafkaProducer<String, Page> pageProducer = new KafkaProducer<>(kafkaConfig.getPageProducerProperties());
-            ProducerService producerService = new PageProducerService(kafkaConfig, messageQueue, shuffleQueue,
+            ProducerService pageProducerService = new PageProducerService(kafkaConfig, messageQueue, shuffleQueue,
                     pageProducer, crawlerService, countDownLatch);
-            producerServices.add(producerService);
-            executorService.submit(producerService);
+            producerServices.add(pageProducerService);
+            Thread pageProducerThread = new Thread(threadGroup, pageProducerService);
+            kafkaServices.add(pageProducerThread);
+            pageProducerThread.start();
         }
 
         KafkaProducer<String, String> linkProducer = new KafkaProducer<>(kafkaConfig.getLinkProducerProperties());
-        ProducerService producerService = new LinkProducerService(kafkaConfig, shuffleQueue, linkProducer, countDownLatch);
-        producerServices.add(producerService);
-        executorService.submit(producerService);
-
-        executorService.shutdown();
+        ProducerService linkProducerService = new LinkProducerService(kafkaConfig, shuffleQueue, linkProducer, countDownLatch);
+        producerServices.add(linkProducerService);
+        Thread linkProducerThread = new Thread(threadGroup, linkProducerService);
+        kafkaServices.add(linkProducerThread);
+        linkProducerThread.start();
     }
 
     /**
