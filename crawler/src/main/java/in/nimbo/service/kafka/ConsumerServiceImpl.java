@@ -1,5 +1,6 @@
 package in.nimbo.service.kafka;
 
+import in.nimbo.common.config.KafkaConfig;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,13 +17,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ConsumerServiceImpl implements ConsumerService {
     private Logger logger = LoggerFactory.getLogger("crawler");
     private BlockingQueue<String> messageQueue;
+    private KafkaConfig kafkaConfig;
     private Consumer<String, String> consumer;
 
     private CountDownLatch countDownLatch;
     private AtomicBoolean closed = new AtomicBoolean(false);
 
-    public ConsumerServiceImpl(Consumer<String, String> consumer, BlockingQueue<String> messageQueue,
+    public ConsumerServiceImpl(KafkaConfig kafkaConfig,
+                               Consumer<String, String> consumer, BlockingQueue<String> messageQueue,
                                CountDownLatch countDownLatch) {
+        this.kafkaConfig = kafkaConfig;
         this.consumer = consumer;
         this.messageQueue = messageQueue;
         this.countDownLatch = countDownLatch;
@@ -37,7 +41,7 @@ public class ConsumerServiceImpl implements ConsumerService {
     public void run() {
         try {
             while (!closed.get()) {
-                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(10));
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(kafkaConfig.getMaxPollDuration()));
                 for (ConsumerRecord<String, String> record : records) {
                     messageQueue.put(record.value());
                 }

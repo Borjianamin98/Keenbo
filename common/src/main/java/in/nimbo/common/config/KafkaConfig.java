@@ -18,6 +18,7 @@ public class KafkaConfig {
     private String linkTopic;
     private String pageTopic;
     private String shufflerTopic;
+    private int maxPollDuration;
     private int pageProducerCount;
     private int linkProducerCount;
     private int shufflerProducerCount;
@@ -39,6 +40,7 @@ public class KafkaConfig {
             config.setLinkTopic(configuration.getString("link.topic.name"));
             config.setPageTopic(configuration.getString("page.topic.name"));
             config.setShufflerTopic(configuration.getString("shuffler.topic.name"));
+            config.setMaxPollDuration(configuration.getInt("max.poll.duration.milliseconds"));
             config.setPageProducerCount(configuration.getInt("page.producer.count"));
             config.setLinkProducerCount(configuration.getInt("link.producer.count"));
             config.setShufflerProducerCount(configuration.getInt("shuffler.producer.count"));
@@ -49,6 +51,14 @@ public class KafkaConfig {
         } catch (ConfigurationException e) {
             throw new LoadConfigurationException(CONFIG_NAME, e);
         }
+    }
+
+    public int getMaxPollDuration() {
+        return maxPollDuration;
+    }
+
+    public void setMaxPollDuration(int maxPollDuration) {
+        this.maxPollDuration = maxPollDuration;
     }
 
     public Properties getShufflerConsumerProperties() {

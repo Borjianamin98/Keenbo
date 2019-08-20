@@ -57,7 +57,7 @@ public class KafkaServiceImpl implements KafkaService {
 
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
-        ConsumerService consumerService = new ConsumerServiceImpl(kafkaConsumer, messageQueue, countDownLatch);
+        ConsumerService consumerService = new ConsumerServiceImpl(kafkaConfig, kafkaConsumer, messageQueue, countDownLatch);
         Thread consumerThread = new Thread(threadGroup, consumerService, kafkaConfig.getServiceName());
         kafkaServices.add(consumerThread);
         consumerThread.start();

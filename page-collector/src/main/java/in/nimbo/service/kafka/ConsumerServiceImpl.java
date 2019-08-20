@@ -1,5 +1,6 @@
 package in.nimbo.service.kafka;
 
+import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.entity.Page;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -21,9 +22,11 @@ public class ConsumerServiceImpl implements ConsumerService {
     private Consumer<String, Page> consumer;
     private AtomicBoolean closed;
     private CountDownLatch countDownLatch;
+    private KafkaConfig kafkaConfig;
 
-    public ConsumerServiceImpl(Consumer<String, Page> consumer, BlockingQueue<Page> messageQueue,
+    public ConsumerServiceImpl(KafkaConfig kafkaConfig, Consumer<String, Page> consumer, BlockingQueue<Page> messageQueue,
                                CountDownLatch countDownLatch) {
+        this.kafkaConfig = kafkaConfig;
         this.consumer = consumer;
         this.messageQueue = messageQueue;
         closed = new AtomicBoolean(false);
@@ -39,7 +42,7 @@ public class ConsumerServiceImpl implements ConsumerService {
     public void run() {
         try {
             while (!closed.get()) {
-                ConsumerRecords<String, Page> records = consumer.poll(Duration.ofMillis(10));
+                ConsumerRecords<String, Page> records = consumer.poll(Duration.ofMillis(kafkaConfig.getMaxPollDuration()));
                 for (ConsumerRecord<String, Page> record : records) {
                     boolean isAdded = false;
                     while (!isAdded && !closed.get()) {

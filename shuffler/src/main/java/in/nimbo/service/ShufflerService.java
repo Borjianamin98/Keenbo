@@ -59,7 +59,7 @@ public class ShufflerService implements Runnable, Closeable {
             int retry = 0;
             int lastSize = -1;
             while (!closed.get()) {
-                ConsumerRecords<String, String> records = shufflerConsumer.poll(Duration.ofMillis(10));
+                ConsumerRecords<String, String> records = shufflerConsumer.poll(Duration.ofMillis(kafkaConfig.getMaxPollDuration()));
                 for (ConsumerRecord<String, String> record : records) {
                     shuffleList.add(record.value());
                 }

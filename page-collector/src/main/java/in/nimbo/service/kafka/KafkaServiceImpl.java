@@ -45,7 +45,7 @@ public class KafkaServiceImpl implements KafkaService {
         // Prepare consumer
         KafkaConsumer<String, Page> kafkaConsumer = new KafkaConsumer<>(config.getPageConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(config.getPageTopic()));
-        consumerService = new ConsumerServiceImpl(kafkaConsumer, messageQueue, countDownLatch);
+        consumerService = new ConsumerServiceImpl(config, kafkaConsumer, messageQueue, countDownLatch);
         executorService.submit(consumerService);
 
         // Prepare producer
