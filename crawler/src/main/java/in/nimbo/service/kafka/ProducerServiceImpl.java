@@ -79,7 +79,7 @@ public class ProducerServiceImpl implements ProducerService {
                 Page page = optionalPage.get();
                 for (Anchor anchor : page.getAnchors()) {
                     String anchorHref = anchor.getHref();
-                    if (!anchorHref.contains("#") && !crawlerService.isCrawled(anchorHref)) {
+                    if (!anchorHref.contains("#")) {
                         linkProducer.send(new ProducerRecord<>(config.getLinkTopic(), anchorHref, anchorHref));
                     }
                 }
