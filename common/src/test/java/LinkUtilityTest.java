@@ -3,7 +3,6 @@ import in.nimbo.common.utility.LinkUtility;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 
 import static org.junit.Assert.*;
 
@@ -39,18 +38,18 @@ public class LinkUtilityTest {
         LinkUtility.reverseLink("www.google.com");
     }
 
-    @Test(expected = URISyntaxException.class)
+    @Test(expected = MalformedURLException.class)
     public void testGetMainDomainInvalidUrl() throws MalformedURLException {
         LinkUtility.getMainDomain("invalid");
     }
 
-    @Test(expected = URISyntaxException.class)
+    @Test(expected = MalformedURLException.class)
     public void testGetMainDomainNullUrl() throws MalformedURLException {
         LinkUtility.getMainDomain("https://salam");
     }
 
     @Test
-    public void testIsValidUrl() throws URISyntaxException {
+    public void testIsValidUrl() {
         assertFalse(LinkUtility.isValidUrl(null));
         assertFalse(LinkUtility.isValidUrl("invalid"));
         assertFalse(LinkUtility.isValidUrl("https://salam"));
