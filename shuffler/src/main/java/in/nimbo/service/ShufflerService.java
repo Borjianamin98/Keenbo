@@ -64,7 +64,7 @@ public class ShufflerService implements Runnable, Closeable {
                     shuffleList.add(record.value());
                 }
                 int size = shuffleList.size();
-                if (size == maxShuffleQueueSize || retry >= 100) {
+                if (size == maxShuffleQueueSize || retry >= 10) {
                     processList();
                     retry = 0;
                 } else {
