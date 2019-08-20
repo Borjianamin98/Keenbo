@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PageProducerService implements ProducerService {
@@ -26,18 +27,20 @@ public class PageProducerService implements ProducerService {
     private Producer<String, Page> pageProducer;
     private CrawlerService crawlerService;
 
+    private CountDownLatch countDownLatch;
     private AtomicBoolean closed = new AtomicBoolean(false);
 
     private Counter allLinksCounter;
 
     public PageProducerService(KafkaConfig config,
                                BlockingQueue<String> messageQueue, BlockingQueue<String> shuffleQueue,
-                               Producer<String, Page> pageProducer, CrawlerService crawlerService) {
+                               Producer<String, Page> pageProducer, CrawlerService crawlerService, CountDownLatch countDownLatch) {
         this.config = config;
         this.messageQueue = messageQueue;
         this.shuffleQueue = shuffleQueue;
         this.pageProducer = pageProducer;
         this.crawlerService = crawlerService;
+        this.countDownLatch = countDownLatch;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         allLinksCounter = metricRegistry.counter(MetricRegistry.name(ProducerService.class, "allLinksCounter"));
     }
@@ -61,6 +64,7 @@ public class PageProducerService implements ProducerService {
             if (pageProducer != null)
                 pageProducer.close();
             logger.info("Page Producer service stopped successfully");
+            countDownLatch.countDown();
         }
     }
 

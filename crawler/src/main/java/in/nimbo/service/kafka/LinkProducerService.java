@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,6 +22,7 @@ public class LinkProducerService implements ProducerService {
     private Producer<String, String> linkProducer;
     private int maxShuffleQueueSize;
 
+    private CountDownLatch countDownLatch;
     private AtomicBoolean closed = new AtomicBoolean(false);
 
     private Timer shuffleLinksTimer;
@@ -28,11 +30,12 @@ public class LinkProducerService implements ProducerService {
     private ThreadLocalRandom random = ThreadLocalRandom.current();
 
     public LinkProducerService(KafkaConfig config, BlockingQueue<String> shuffleQueue, int maxShuffleQueueSize,
-                               Producer<String, String> linkProducer) {
+                               Producer<String, String> linkProducer, CountDownLatch countDownLatch) {
         this.config = config;
         this.shuffleQueue = shuffleQueue;
         this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.linkProducer = linkProducer;
+        this.countDownLatch = countDownLatch;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         shuffleLinksTimer = metricRegistry.timer(MetricRegistry.name(LinkProducerService.class, "shuffleLinksTimer"));
     }
@@ -68,6 +71,7 @@ public class LinkProducerService implements ProducerService {
             if (linkProducer != null)
                 linkProducer.close();
             logger.info("Link Producer service stopped successfully");
+            countDownLatch.countDown();
         }
     }
 
