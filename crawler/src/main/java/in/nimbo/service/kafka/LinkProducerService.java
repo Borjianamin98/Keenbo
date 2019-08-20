@@ -17,16 +17,18 @@ public class LinkProducerService implements ProducerService {
     private KafkaConfig config;
     private BlockingQueue<String> shuffleQueue;
     private Producer<String, String> linkProducer;
+    private int maxShuffleQueueSize;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
     private CountDownLatch countDownLatch;
 
     private ThreadLocalRandom random = ThreadLocalRandom.current();
 
-    public LinkProducerService(KafkaConfig config, BlockingQueue<String> shuffleQueue,
+    public LinkProducerService(KafkaConfig config, BlockingQueue<String> shuffleQueue, int maxShuffleQueueSize,
                                Producer<String, String> linkProducer, CountDownLatch countDownLatch) {
         this.config = config;
         this.shuffleQueue = shuffleQueue;
+        this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.linkProducer = linkProducer;
         this.countDownLatch = countDownLatch;
     }
@@ -43,7 +45,7 @@ public class LinkProducerService implements ProducerService {
             int lastQueueSize = -1;
             while (!closed.get()) {
                 int size = shuffleQueue.size();
-                if (size == 100000 || retry >= 3) {
+                if (size == maxShuffleQueueSize || retry >= 3) {
                     processQueue();
                     retry = 0;
                 } else {
