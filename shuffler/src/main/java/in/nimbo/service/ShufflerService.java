@@ -5,7 +5,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.utility.CloseUtility;
-import in.nimbo.redis.RedisDAO;
+import in.nimbo.dao.hbase.HBaseDAO;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,7 +31,7 @@ public class ShufflerService implements Runnable, Closeable {
     private Consumer<String, String> shufflerConsumer;
     private Producer<String, String> linkProducer;
     private int maxShuffleQueueSize;
-    private RedisDAO redisDAO;
+    private HBaseDAO hBaseDAO;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
     private CountDownLatch countDownLatch;
@@ -40,14 +41,14 @@ public class ShufflerService implements Runnable, Closeable {
 
     public ShufflerService(KafkaConfig kafkaConfig, int maxShuffleQueueSize,
                            Consumer<String, String> shufflerConsumer, Producer<String, String> linkProducer,
-                           List<String> shuffleList, RedisDAO redisDAO, CountDownLatch countDownLatch) {
+                           List<String> shuffleList, HBaseDAO hBaseDAO, CountDownLatch countDownLatch) {
         this.kafkaConfig = kafkaConfig;
         this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.shufflerConsumer = shufflerConsumer;
         this.linkProducer = linkProducer;
         this.shuffleList = shuffleList;
         this.countDownLatch = countDownLatch;
-        this.redisDAO = redisDAO;
+        this.hBaseDAO = hBaseDAO;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         shuffleLinksTimer = metricRegistry.timer(MetricRegistry.name(ShufflerService.class, "shuffleLinksTimer"));
     }
@@ -69,7 +70,6 @@ public class ShufflerService implements Runnable, Closeable {
                 }
                 int size = shuffleList.size();
                 if (size >= maxShuffleQueueSize || retry >= 10) {
-                    logger.info("Start shuffling {} links", size);
                     processList();
                     retry = 0;
                 } else {
@@ -114,14 +114,23 @@ public class ShufflerService implements Runnable, Closeable {
     }
 
     private void processList() {
-        Timer.Context shuffleLinksTimerContext = shuffleLinksTimer.time();
-        String[] shuffledLinks = shuffle(shuffleList);
-        shuffleLinksTimerContext.stop();
-        for (String link : shuffledLinks) {
-            if (!redisDAO.contains(link)) {
-                linkProducer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), link, link));
+        logger.info("Start shuffling {} links", shuffleList.size());
+        boolean[] contains = hBaseDAO.contains(shuffleList);
+        List<String> filteredList = new ArrayList<>(shuffleList.size());
+        for (int i = 0; i < contains.length; i++) {
+            if (!contains[i]) {
+                filteredList.add(shuffleList.get(i));
             }
         }
+        logger.info("Remove {} from shuffle list", shuffleList.size() - filteredList.size());
+        Timer.Context shuffleLinksTimerContext = shuffleLinksTimer.time();
+        String[] shuffledLinks = shuffle(filteredList);
+        shuffleLinksTimerContext.stop();
+        logger.info("Finish shuffling {} links", filteredList.size());
+        for (String link : shuffledLinks) {
+            linkProducer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), link, link));
+        }
+        logger.info("Adding {} shuffled links to kafka", filteredList.size());
         shuffleList.clear();
     }
 }
