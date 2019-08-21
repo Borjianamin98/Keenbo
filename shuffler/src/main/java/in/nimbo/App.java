@@ -5,10 +5,13 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jmx.JmxReporter;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.config.ProjectConfig;
+import in.nimbo.common.config.RedisConfig;
+import in.nimbo.redis.RedisDAOImpl;
 import in.nimbo.service.kafka.KafkaService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisCluster;
 
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +35,12 @@ public class App {
         initReporter(projectConfig);
         appLogger.info("Reporter started");
 
-        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig);
+        RedisConfig redisConfig = RedisConfig.load();
+        JedisCluster redisCluster = new JedisCluster(redisConfig.getHostAndPorts());
+        RedisDAOImpl redisDAO = new RedisDAOImpl(redisCluster, redisConfig);
+        appLogger.info("Redis started");
+
+        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, redisDAO);
         appLogger.info("Services started");
 
         appLogger.info("Application started");

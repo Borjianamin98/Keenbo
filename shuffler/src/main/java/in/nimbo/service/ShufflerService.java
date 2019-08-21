@@ -5,6 +5,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.utility.CloseUtility;
+import in.nimbo.redis.RedisDAO;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -29,6 +30,7 @@ public class ShufflerService implements Runnable, Closeable {
     private Consumer<String, String> shufflerConsumer;
     private Producer<String, String> linkProducer;
     private int maxShuffleQueueSize;
+    private RedisDAO redisDAO;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
     private CountDownLatch countDownLatch;
@@ -38,13 +40,14 @@ public class ShufflerService implements Runnable, Closeable {
 
     public ShufflerService(KafkaConfig kafkaConfig, int maxShuffleQueueSize,
                            Consumer<String, String> shufflerConsumer, Producer<String, String> linkProducer,
-                           List<String> shuffleList, CountDownLatch countDownLatch) {
+                           List<String> shuffleList, RedisDAO redisDAO, CountDownLatch countDownLatch) {
         this.kafkaConfig = kafkaConfig;
         this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.shufflerConsumer = shufflerConsumer;
         this.linkProducer = linkProducer;
         this.shuffleList = shuffleList;
         this.countDownLatch = countDownLatch;
+        this.redisDAO = redisDAO;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         shuffleLinksTimer = metricRegistry.timer(MetricRegistry.name(ShufflerService.class, "shuffleLinksTimer"));
     }
@@ -115,7 +118,9 @@ public class ShufflerService implements Runnable, Closeable {
         String[] shuffledLinks = shuffle(shuffleList);
         shuffleLinksTimerContext.stop();
         for (String link : shuffledLinks) {
-            linkProducer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), link, link));
+            if (!redisDAO.contains(link)) {
+                linkProducer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), link, link));
+            }
         }
         shuffleList.clear();
     }
