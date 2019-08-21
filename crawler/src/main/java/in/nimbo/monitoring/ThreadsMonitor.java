@@ -5,20 +5,16 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadsMonitor implements Runnable {
     private List<Thread> threads;
-    private AtomicInteger waitingThreads = new AtomicInteger(0);
-    private AtomicInteger terminatedThreads = new AtomicInteger(0);
-    private AtomicInteger activeThreads = new AtomicInteger(0);
-    private AtomicInteger totalThreads = new AtomicInteger(0);
 
     private Histogram waitingThreadsHistogram;
     private Histogram activeThreadsHistogram;
     private Histogram terminatedThreadsHistogram;
 
     public ThreadsMonitor(List<Thread> threads) {
+        this.threads = threads;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
         waitingThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "waitingThreads"));
         activeThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "activeThreads"));
