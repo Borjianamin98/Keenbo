@@ -27,7 +27,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 public class ParserService {
-    private Logger logger = LoggerFactory.getLogger("parser");
+    private Logger parserLogger = LoggerFactory.getLogger("parser");
     private Logger appLogger = LoggerFactory.getLogger("crawler");
     private ProjectConfig projectConfig;
 
@@ -56,17 +56,17 @@ public class ParserService {
                 return Optional.of(response.parse());
             }
         } catch (SSLHandshakeException e) {
-            logger.warn("Server certificate verification failed: {}", link);
+            parserLogger.warn("Server certificate verification failed: {}", link);
         } catch (UnknownHostException e) {
-            logger.warn("Could not resolve host: {}", link);
+            parserLogger.warn("Could not resolve host: {}", link);
         } catch (MalformedURLException | IllegalArgumentException e) {
-            logger.warn("Illegal url format: {}", link);
+            parserLogger.warn("Illegal url format: {}", link);
         } catch (HttpStatusException e) {
-            logger.warn("Response is not OK. Url: \"{}\" StatusCode: {}", e.getUrl(), e.getStatusCode());
+            parserLogger.warn("Response is not OK. Url: \"{}\" StatusCode: {}", e.getUrl(), e.getStatusCode());
         } catch (SocketTimeoutException e) {
-            logger.warn("Connection time out with jsoup: {}", link);
+            parserLogger.warn("Connection time out with jsoup: {}", link);
         } catch (StringIndexOutOfBoundsException | IOException e) {
-            logger.warn("Unable to parse page with jsoup: {}", link);
+            parserLogger.warn("Unable to parse page with jsoup: {}", link);
         }
         return Optional.empty();
     }
@@ -91,7 +91,7 @@ public class ParserService {
                     }
                     anchors.add(new Anchor(normalizedUrl, linkElement.text().toLowerCase()));
                 } catch (MalformedURLException e) {
-                    logger.warn("Unable to normalize link: {}", absUrl);
+                    parserLogger.warn("Unable to normalize link: {}", absUrl);
                 }
             }
         }
@@ -153,14 +153,17 @@ public class ParserService {
      */
     public Page getPage(String link) {
         try {
+            appLogger.info("Start fetching document from link {}", link);
             Optional<Document> documentOptional = getDocument(link);
             if (!documentOptional.isPresent()) {
                 throw new ParseLinkException("JSoup parse exception");
             }
+            appLogger.info("Fetch document from link {} finished successfully", link);
             Document document = documentOptional.get();
             String pageContentWithoutTag = document.text().replace("\n", " ");
+            appLogger.info("Extract contents from page with link {}", link);
             if (pageContentWithoutTag.isEmpty()) {
-                logger.warn("There is no content for site: {}", link);
+                parserLogger.warn("There is no content for site: {}", link);
             } else if (isEnglishLanguage(pageContentWithoutTag)) {
                 Set<Anchor> anchors = getAnchors(document);
                 List<Meta> metas = getMetas(document);
@@ -168,12 +171,13 @@ public class ParserService {
                 if (title.isEmpty()) {
                     title = link;
                 }
+                appLogger.info("Finish extracting contents from page with link {}", link);
                 return new Page(link, title, pageContentWithoutTag, anchors, metas, 1.0);
             }
         } catch (MalformedURLException e) {
             appLogger.warn("Unable to reverse link: {}", link);
         } catch (LanguageDetectException e) {
-            logger.warn("Cannot detect language of site: {}", link);
+            parserLogger.warn("Cannot detect language of site: {}", link);
         }
         throw new ParseLinkException();
     }

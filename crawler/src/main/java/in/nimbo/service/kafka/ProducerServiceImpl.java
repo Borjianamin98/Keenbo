@@ -85,7 +85,7 @@ public class ProducerServiceImpl implements ProducerService {
                 shufflerProducer.send(new ProducerRecord<>(config.getShufflerTopic(), link, link));
             }
         } catch (ParseLinkException | InvalidLinkException ignored) {
-            // Ignore link
+            logger.info("Skip corrupt link {}", link);
         } catch (Exception e) {
             logger.error("Uncached exception", e);
         }

@@ -3,19 +3,13 @@ package in.nimbo;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jmx.JmxReporter;
-import in.nimbo.common.config.HBaseConfig;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.config.ProjectConfig;
-import in.nimbo.dao.hbase.HBaseDAO;
-import in.nimbo.dao.hbase.HBaseDAOImpl;
 import in.nimbo.service.kafka.KafkaService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -38,20 +32,7 @@ public class App {
         initReporter(projectConfig);
         appLogger.info("Reporter started");
 
-        Connection hBaseConnection = null;
-        try {
-            hBaseConnection = ConnectionFactory.createConnection();
-            appLogger.info("HBase started");
-        } catch (IOException e) {
-            appLogger.error("Unable to establish HBase connection", e);
-            System.exit(1);
-        }
-
-        HBaseConfig hBaseConfig = HBaseConfig.load();
-        HBaseDAO hBaseDAO = new HBaseDAOImpl(hBaseConnection, hBaseConfig);
-        appLogger.info("HBaseDAO interface created");
-
-        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, hBaseDAO);
+        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig);
         appLogger.info("Services started");
 
         appLogger.info("Application started");

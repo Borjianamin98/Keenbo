@@ -55,13 +55,12 @@ public class KafkaServiceImpl implements KafkaService {
      */
     @Override
     public void schedule() {
-        ThreadGroup threadGroup = new ThreadGroup(kafkaConfig.getServiceName());
-        startThreadsMonitoring(threadGroup);
+        startThreadsMonitoring();
 
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
         consumerService = new ConsumerServiceImpl(kafkaConfig, kafkaConsumer, messageQueue, countDownLatch);
-        Thread consumerThread = new Thread(threadGroup, consumerService, kafkaConfig.getServiceName());
+        Thread consumerThread = new Thread(consumerService, kafkaConfig.getServiceName());
         kafkaServices.add(consumerThread);
         consumerThread.start();
 
@@ -70,7 +69,7 @@ public class KafkaServiceImpl implements KafkaService {
             KafkaProducer<String, Page> pageProducer = new KafkaProducer<>(kafkaConfig.getPageProducerProperties());
             ProducerService pageProducerService = new ProducerServiceImpl(kafkaConfig, messageQueue,
                     pageProducer, shufflerProducer, crawlerService, countDownLatch);
-            Thread pageProducerThread = new Thread(threadGroup, pageProducerService, kafkaConfig.getServiceName());
+            Thread pageProducerThread = new Thread(pageProducerService, kafkaConfig.getServiceName());
             kafkaServices.add(pageProducerThread);
             producerServices.add(pageProducerService);
             pageProducerThread.start();
@@ -115,8 +114,8 @@ public class KafkaServiceImpl implements KafkaService {
         }
     }
 
-    private void startThreadsMonitoring(ThreadGroup threadGroup) {
-        ThreadsMonitor threadsMonitor = new ThreadsMonitor(threadGroup);
+    private void startThreadsMonitoring() {
+        ThreadsMonitor threadsMonitor = new ThreadsMonitor(kafkaServices);
         threadMonitorService = Executors.newScheduledThreadPool(1);
         threadMonitorService.scheduleAtFixedRate(threadsMonitor, 0, 1, TimeUnit.SECONDS);
     }

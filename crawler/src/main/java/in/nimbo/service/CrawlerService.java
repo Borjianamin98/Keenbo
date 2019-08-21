@@ -54,6 +54,7 @@ public class CrawlerService {
      * @throws ParseLinkException if any exception happen in parser
      */
     public Optional<Page> crawl(String siteLink) {
+        appLogger.info("Start crawling link {}", siteLink);
         try {
             String siteDomain = LinkUtility.getMainDomain(siteLink);
             if (cache.getIfPresent(siteDomain) == null) {
@@ -66,19 +67,23 @@ public class CrawlerService {
                     redisDAO.add(siteLink);
                     cache.put(siteDomain, LocalDateTime.now());
                     Timer.Context context = getPageTimer.time();
+                    appLogger.info("Start parse link {}", siteLink);
                     Page page = parserService.getPage(siteLink);
+                    appLogger.info("Finish parsing link {}", siteLink);
                     context.stop();
                     return Optional.of(page);
                 } else {
+                    appLogger.info("Skip link {} because crawled before", siteLink);
                     skippedLinksCounter.inc();
                     throw new InvalidLinkException("duplicated link: " + siteLink);
                 }
             } else {
+                appLogger.info("Skip link {} because of cache hit", siteLink);
                 cacheHitCounter.inc();
                 return Optional.empty();
             }
         } catch (MalformedURLException e) {
-            parserLogger.warn("Illegal URL format: " + siteLink, e);
+            appLogger.warn("Illegal URL format: " + siteLink, e);
         }
         throw new InvalidLinkException();
     }
