@@ -9,6 +9,7 @@ import java.util.List;
 public class ThreadsMonitor implements Runnable {
     private List<Thread> threads;
 
+    private Histogram newThreadsHistogram;
     private Histogram waitingThreadsHistogram;
     private Histogram activeThreadsHistogram;
     private Histogram terminatedThreadsHistogram;
@@ -19,25 +20,30 @@ public class ThreadsMonitor implements Runnable {
         waitingThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "waitingThreads"));
         activeThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "activeThreads"));
         terminatedThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "terminatedThreads"));
+        newThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "newThreads"));
     }
 
     @Override
     public void run() {
-        int newActiveThreads = 0;
-        int newWaitingThreads = 0;
-        int newTerminatedThreads = 0;
+        int newThreads = 0;
+        int activeThreads = 0;
+        int waitingThreads = 0;
+        int terminatedThreads = 0;
         for (Thread thread : threads) {
             Thread.State state = thread.getState();
             if (state.equals(Thread.State.RUNNABLE)) {
-                newActiveThreads++;
+                activeThreads++;
             } else if (state.equals(Thread.State.BLOCKED) || state.equals(Thread.State.TIMED_WAITING) || state.equals(Thread.State.WAITING)) {
-                newWaitingThreads++;
+                waitingThreads++;
             } else if (state.equals(Thread.State.TERMINATED)) {
-                newTerminatedThreads++;
+                terminatedThreads++;
+            } else if (state.equals(Thread.State.NEW)) {
+                newThreads++;
             }
         }
-        activeThreadsHistogram.update(newActiveThreads);
-        waitingThreadsHistogram.update(newWaitingThreads);
-        terminatedThreadsHistogram.update(newTerminatedThreads);
+        newThreadsHistogram.update(newThreads);
+        activeThreadsHistogram.update(activeThreads);
+        waitingThreadsHistogram.update(waitingThreads);
+        terminatedThreadsHistogram.update(terminatedThreads);
     }
 }
