@@ -35,6 +35,7 @@ public class KafkaServiceImpl implements KafkaService {
         this.crawlerService = crawlerService;
         this.kafkaConfig = kafkaConfig;
         kafkaServices = new ArrayList<>();
+        producerServices = new ArrayList<>();
         messageQueue = new ArrayBlockingQueue<>(kafkaConfig.getLocalLinkQueueSize());
         countDownLatch = new CountDownLatch(kafkaConfig.getLinkProducerCount() + 1);
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
