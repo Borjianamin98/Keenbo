@@ -28,6 +28,8 @@ public class KafkaServiceImpl implements KafkaService {
     private CountDownLatch countDownLatch;
 
     private List<Thread> kafkaServices;
+    private List<ProducerService> producerServices;
+    private ConsumerService consumerService;
 
     public KafkaServiceImpl(CrawlerService crawlerService, KafkaConfig kafkaConfig) {
         this.crawlerService = crawlerService;
@@ -57,7 +59,7 @@ public class KafkaServiceImpl implements KafkaService {
 
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(kafkaConfig.getLinkConsumerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(kafkaConfig.getLinkTopic()));
-        ConsumerService consumerService = new ConsumerServiceImpl(kafkaConfig, kafkaConsumer, messageQueue, countDownLatch);
+        consumerService = new ConsumerServiceImpl(kafkaConfig, kafkaConsumer, messageQueue, countDownLatch);
         Thread consumerThread = new Thread(threadGroup, consumerService, kafkaConfig.getServiceName());
         kafkaServices.add(consumerThread);
         consumerThread.start();
@@ -69,6 +71,7 @@ public class KafkaServiceImpl implements KafkaService {
                     pageProducer, shufflerProducer, crawlerService, countDownLatch);
             Thread pageProducerThread = new Thread(threadGroup, pageProducerService, kafkaConfig.getServiceName());
             kafkaServices.add(pageProducerThread);
+            producerServices.add(pageProducerService);
             pageProducerThread.start();
         }
     }
@@ -79,6 +82,10 @@ public class KafkaServiceImpl implements KafkaService {
     @Override
     public void stopSchedule() {
         logger.info("Stop schedule service");
+        consumerService.close();
+        for (ProducerService producerService : producerServices) {
+            producerService.close();
+        }
         for (Thread service : kafkaServices) {
             service.interrupt();
         }
