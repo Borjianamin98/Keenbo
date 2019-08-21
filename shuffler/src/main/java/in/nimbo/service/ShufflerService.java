@@ -4,6 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
+import in.nimbo.common.utility.CloseUtility;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -88,11 +89,8 @@ public class ShufflerService implements Runnable, Closeable {
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
-            if (shufflerConsumer != null)
-                shufflerConsumer.close();
-            if (linkProducer != null)
-                linkProducer.close();
-
+            CloseUtility.closeSafely(shufflerConsumer);
+            CloseUtility.closeSafely(linkProducer);
             logger.info("Shuffler service stopped");
             countDownLatch.countDown();
         }

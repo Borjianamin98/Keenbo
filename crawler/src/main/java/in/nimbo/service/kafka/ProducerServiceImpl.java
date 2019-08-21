@@ -8,6 +8,7 @@ import in.nimbo.common.entity.Anchor;
 import in.nimbo.common.entity.Page;
 import in.nimbo.common.exception.InvalidLinkException;
 import in.nimbo.common.exception.ParseLinkException;
+import in.nimbo.common.utility.CloseUtility;
 import in.nimbo.service.CrawlerService;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -61,10 +62,8 @@ public class ProducerServiceImpl implements ProducerService {
         } catch (InterruptedException e) {
             // ignored
         } finally {
-            if (pageProducer != null)
-                pageProducer.close();
-            if (shufflerProducer != null)
-                shufflerProducer.close();
+            CloseUtility.closeSafely(pageProducer);
+            CloseUtility.closeSafely(shufflerProducer);
             logger.info("Page Producer service stopped successfully");
             countDownLatch.countDown();
         }

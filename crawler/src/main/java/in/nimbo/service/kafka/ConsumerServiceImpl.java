@@ -1,6 +1,7 @@
 package in.nimbo.service.kafka;
 
 import in.nimbo.common.config.KafkaConfig;
+import in.nimbo.common.utility.CloseUtility;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -59,8 +60,7 @@ public class ConsumerServiceImpl implements ConsumerService {
             logger.error(e.getMessage(), e);
             logger.info("Consumer service stopped with failures");
         } finally {
-            if (consumer != null)
-                consumer.close();
+            CloseUtility.closeSafely(consumer);
             countDownLatch.countDown();
         }
     }

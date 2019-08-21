@@ -1,11 +1,10 @@
 package in.nimbo.monitoring;
 
-import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ThreadsMonitor implements Runnable {
@@ -15,37 +14,18 @@ public class ThreadsMonitor implements Runnable {
     private AtomicInteger activeThreads = new AtomicInteger(0);
     private AtomicInteger totalThreads = new AtomicInteger(0);
 
+    private Histogram waitingThreadsHistogram;
+    private Histogram activeThreadsHistogram;
+    private Histogram terminatedThreadsHistogram;
+    private Histogram totalThreadsHistogram;
+
     public ThreadsMonitor(ThreadGroup threadGroup) {
         this.threadGroup = threadGroup;
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
-        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "waitingThreadsGauge"),
-                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
-                    @Override
-                    protected Integer loadValue() {
-                        return waitingThreads.get();
-                    }
-                });
-        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "activeThreadsGauge"),
-                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
-                    @Override
-                    protected Integer loadValue() {
-                        return activeThreads.get();
-                    }
-                });
-        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "terminatedThreadsGauge"),
-                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
-                    @Override
-                    protected Integer loadValue() {
-                        return totalThreads.get();
-                    }
-                });
-        metricRegistry.register(MetricRegistry.name(ThreadsMonitor.class, "totalThreadsGauge"),
-                new CachedGauge<Integer>(3, TimeUnit.SECONDS) {
-                    @Override
-                    protected Integer loadValue() {
-                        return totalThreads.get();
-                    }
-                });
+        waitingThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "waitingThreads"));
+        activeThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "activeThreads"));
+        terminatedThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "terminatedThreads"));
+        totalThreadsHistogram = metricRegistry.histogram(MetricRegistry.name(ThreadsMonitor.class, "totalThreads"));
     }
 
     @Override
@@ -68,9 +48,9 @@ public class ThreadsMonitor implements Runnable {
                 }
             }
         }
-        activeThreads.set(newActiveThreads);
-        waitingThreads.set(newWaitingThreads);
-        terminatedThreads.set(newTerminatedThreads);
-        totalThreads.set(newTotalThreads);
+        activeThreadsHistogram.update(newActiveThreads);
+        waitingThreadsHistogram.update(newWaitingThreads);
+        terminatedThreadsHistogram.update(newTerminatedThreads);
+        totalThreadsHistogram.update(newTotalThreads);
     }
 }
