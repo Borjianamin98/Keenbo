@@ -73,7 +73,7 @@ public class ShufflerService implements Runnable, Closeable {
                 if (size >= maxShuffleQueueSize || retry >= 10) {
                     processList();
                     retry = 0;
-                    TimeUnit.MINUTES.sleep(3);
+                    TimeUnit.MINUTES.sleep(5);
                 } else {
                     if (size == lastSize) {
                         retry++;

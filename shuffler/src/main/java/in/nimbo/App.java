@@ -22,10 +22,12 @@ public class App {
     private static Logger cliLogger = LoggerFactory.getLogger("cli");
     private static Logger appLogger = LoggerFactory.getLogger("shuffler");
     private KafkaService kafkaService;
+    private RedissonClient redissonClient;
 
 
-    public App(KafkaService kafkaService) {
+    public App(KafkaService kafkaService, RedissonClient redis) {
         this.kafkaService = kafkaService;
+        this.redissonClient = redis;
     }
 
     public static void main(String[] args) {
@@ -48,7 +50,7 @@ public class App {
         appLogger.info("Services started");
 
         appLogger.info("Application started");
-        App app = new App(kafkaService);
+        App app = new App(kafkaService, redis);
         Runtime.getRuntime().addShutdownHook(new Thread(app::stopApp));
 
         app.startApp();
@@ -74,6 +76,7 @@ public class App {
 
     private void stopApp() {
         kafkaService.stopSchedule();
+        redissonClient.shutdown();
         appLogger.info("Application stopped");
     }
 
