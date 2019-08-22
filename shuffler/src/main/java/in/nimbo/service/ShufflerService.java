@@ -71,7 +71,7 @@ public class ShufflerService implements Runnable, Closeable {
                     shuffleList.add(record.value());
                 }
                 int size = shuffleList.size();
-                if (size >= shufflerConfig.getShuffleSize() || retry >= 10) {
+                if (size > 0 && size >= shufflerConfig.getShuffleSize() || retry >= 10) {
                     processList();
                     retry = 0;
                     TimeUnit.MINUTES.sleep(shufflerConfig.getShuffleWaitMinutes());
