@@ -20,7 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class KafkaServiceImpl implements KafkaService {
-    private Logger logger = LoggerFactory.getLogger("collector");
+    private Logger logger = LoggerFactory.getLogger("shuffler");
     private KafkaConfig config;
     private RedisDAO redisDAO;
     private List<String> shuffleList;
