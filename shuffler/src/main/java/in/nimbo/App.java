@@ -15,7 +15,6 @@ import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class App {
@@ -49,6 +48,7 @@ public class App {
         RedisDAOImpl redisDAO = new RedisDAOImpl(redis);
         appLogger.info("Redis started");
 
+
         KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, shufflerConfig, redisDAO);
         appLogger.info("Services started");
 
@@ -63,18 +63,6 @@ public class App {
         kafkaService.schedule();
         appLogger.info("Schedule service started");
         cliLogger.info("Welcome to Shuffler\n");
-        cliLogger.info("shuffler> ");
-        Scanner in = new Scanner(System.in);
-        while (in.hasNext()) {
-            String cmd = in.next();
-            if (cmd.equals("exit")) {
-                stopApp();
-                break;
-            } else {
-                cliLogger.info(INVALID_INPUT + "\n");
-            }
-            cliLogger.info("shuffler> ");
-        }
     }
 
     private void stopApp() {
