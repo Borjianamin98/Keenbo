@@ -5,6 +5,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.exception.KafkaServiceException;
+import in.nimbo.config.ShufflerConfig;
 import in.nimbo.redis.RedisDAO;
 import in.nimbo.service.ShufflerService;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class KafkaServiceImpl implements KafkaService {
     private Logger logger = LoggerFactory.getLogger("shuffler");
     private KafkaConfig config;
+    private ShufflerConfig shufflerConfig;
     private RedisDAO redisDAO;
     private List<String> shuffleList;
     private ShufflerService shufflerService;
@@ -29,8 +31,9 @@ public class KafkaServiceImpl implements KafkaService {
 
     private CountDownLatch countDownLatch;
 
-    public KafkaServiceImpl(KafkaConfig kafkaConfig, RedisDAO redisDAO) {
+    public KafkaServiceImpl(KafkaConfig kafkaConfig, ShufflerConfig shufflerConfig, RedisDAO redisDAO) {
         this.config = kafkaConfig;
+        this.shufflerConfig = shufflerConfig;
         this.redisDAO = redisDAO;
         countDownLatch = new CountDownLatch(1);
         shuffleList = new ArrayList<>();
@@ -54,7 +57,7 @@ public class KafkaServiceImpl implements KafkaService {
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(config.getShufflerConsumerProperties());
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(config.getLinkProducerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(config.getShufflerTopic()));
-        shufflerService = new ShufflerService(config, redisDAO, config.getLocalShuffleQueueSize(),
+        shufflerService = new ShufflerService(config, shufflerConfig, redisDAO,
                 kafkaConsumer, kafkaProducer, shuffleList, countDownLatch);
         shufflerServiceThread = new Thread(shufflerService);
         shufflerServiceThread.start();

@@ -5,6 +5,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jmx.JmxReporter;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.config.ProjectConfig;
+import in.nimbo.config.ShufflerConfig;
 import in.nimbo.redis.RedisDAOImpl;
 import in.nimbo.service.kafka.KafkaService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
@@ -33,6 +34,7 @@ public class App {
     public static void main(String[] args) {
         ProjectConfig projectConfig = ProjectConfig.load();
         KafkaConfig kafkaConfig = KafkaConfig.load();
+        ShufflerConfig shufflerConfig = ShufflerConfig.load();
         appLogger.info("Configuration loaded");
 
         initReporter(projectConfig);
@@ -45,12 +47,13 @@ public class App {
                 .addNodeAddress("redis://slave-3:6379");
         RedissonClient redis = Redisson.create(config);
         RedisDAOImpl redisDAO = new RedisDAOImpl(redis);
+        appLogger.info("Redis started");
 
-        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, redisDAO);
+        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, shufflerConfig, redisDAO);
         appLogger.info("Services started");
 
         appLogger.info("Application started");
-        App app = new App(kafkaService, redis);
+        App app = new App(kafkaService,  redis);
         Runtime.getRuntime().addShutdownHook(new Thread(app::stopApp));
 
         app.startApp();

@@ -24,7 +24,6 @@ public class KafkaConfig {
     private int shufflerProducerCount;
     private int localLinkQueueSize;
     private int localPageQueueSize;
-    private int localShuffleQueueSize;
 
     public static KafkaConfig load() {
         KafkaConfig config = new KafkaConfig();
@@ -46,7 +45,6 @@ public class KafkaConfig {
             config.setShufflerProducerCount(configuration.getInt("shuffler.producer.count"));
             config.setLocalLinkQueueSize(configuration.getInt("local.link.queue.size"));
             config.setLocalPageQueueSize(configuration.getInt("local.page.queue.size"));
-            config.setLocalShuffleQueueSize(configuration.getInt("local.shuffle.queue.size"));
             return config;
         } catch (ConfigurationException e) {
             throw new LoadConfigurationException(CONFIG_NAME, e);
@@ -181,11 +179,4 @@ public class KafkaConfig {
         this.serviceName = serviceName;
     }
 
-    public int getLocalShuffleQueueSize() {
-        return localShuffleQueueSize;
-    }
-
-    public void setLocalShuffleQueueSize(int localShuffleQueueSize) {
-        this.localShuffleQueueSize = localShuffleQueueSize;
-    }
 }

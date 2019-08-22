@@ -5,6 +5,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.utility.CloseUtility;
+import in.nimbo.config.ShufflerConfig;
 import in.nimbo.redis.RedisDAO;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -28,11 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ShufflerService implements Runnable, Closeable {
     private Logger logger = LoggerFactory.getLogger("shuffler");
     private KafkaConfig kafkaConfig;
+    private ShufflerConfig shufflerConfig;
     private RedisDAO redisDAO;
     private List<String> shuffleList;
     private Consumer<String, String> shufflerConsumer;
     private Producer<String, String> linkProducer;
-    private int maxShuffleQueueSize;
 
     private AtomicBoolean closed = new AtomicBoolean(false);
     private CountDownLatch countDownLatch;
@@ -40,12 +41,12 @@ public class ShufflerService implements Runnable, Closeable {
 
     private Timer shuffleLinksTimer;
 
-    public ShufflerService(KafkaConfig kafkaConfig, RedisDAO redisDAO, int maxShuffleQueueSize,
+    public ShufflerService(KafkaConfig kafkaConfig, ShufflerConfig shufflerConfig, RedisDAO redisDAO,
                            Consumer<String, String> shufflerConsumer, Producer<String, String> linkProducer,
                            List<String> shuffleList, CountDownLatch countDownLatch) {
         this.kafkaConfig = kafkaConfig;
+        this.shufflerConfig = shufflerConfig;
         this.redisDAO = redisDAO;
-        this.maxShuffleQueueSize = maxShuffleQueueSize;
         this.shufflerConsumer = shufflerConsumer;
         this.linkProducer = linkProducer;
         this.shuffleList = shuffleList;
@@ -70,10 +71,10 @@ public class ShufflerService implements Runnable, Closeable {
                     shuffleList.add(record.value());
                 }
                 int size = shuffleList.size();
-                if (size >= maxShuffleQueueSize || retry >= 10) {
+                if (size >= shufflerConfig.getShuffleSize() || retry >= 10) {
                     processList();
                     retry = 0;
-                    TimeUnit.MINUTES.sleep(6);
+                    TimeUnit.MINUTES.sleep(shufflerConfig.getShuffleWaitMinutes());
                 } else {
                     if (size == lastSize) {
                         retry++;
@@ -135,7 +136,7 @@ public class ShufflerService implements Runnable, Closeable {
         for (String link : shuffledLinks) {
             linkProducer.send(new ProducerRecord<>(kafkaConfig.getLinkTopic(), link, link));
         }
-        logger.info("Adding {} shuffled links to kafka", filteredLinks.size());
+        logger.info("Added {} shuffled links to kafka", filteredLinks.size());
         shuffleList.clear();
     }
 }
