@@ -5,6 +5,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.exception.KafkaServiceException;
+import in.nimbo.redis.RedisDAO;
 import in.nimbo.service.ShufflerService;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -21,13 +22,16 @@ import java.util.concurrent.TimeUnit;
 public class KafkaServiceImpl implements KafkaService {
     private Logger logger = LoggerFactory.getLogger("collector");
     private KafkaConfig config;
-    private ShufflerService shufflerService;
+    private RedisDAO redisDAO;
     private List<String> shuffleList;
+    private ShufflerService shufflerService;
+    private Thread shufflerServiceThread;
 
     private CountDownLatch countDownLatch;
 
-    public KafkaServiceImpl(KafkaConfig kafkaConfig) {
+    public KafkaServiceImpl(KafkaConfig kafkaConfig, RedisDAO redisDAO) {
         this.config = kafkaConfig;
+        this.redisDAO = redisDAO;
         countDownLatch = new CountDownLatch(1);
         shuffleList = new ArrayList<>();
         MetricRegistry metricRegistry = SharedMetricRegistries.getDefault();
@@ -50,9 +54,9 @@ public class KafkaServiceImpl implements KafkaService {
         KafkaConsumer<String, String> kafkaConsumer = new KafkaConsumer<>(config.getShufflerConsumerProperties());
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(config.getLinkProducerProperties());
         kafkaConsumer.subscribe(Collections.singletonList(config.getShufflerTopic()));
-        shufflerService = new ShufflerService(config, config.getLocalShuffleQueueSize(),
+        shufflerService = new ShufflerService(config, redisDAO, config.getLocalShuffleQueueSize(),
                 kafkaConsumer, kafkaProducer, shuffleList, countDownLatch);
-        Thread shufflerServiceThread = new Thread(shufflerService);
+        shufflerServiceThread = new Thread(shufflerService);
         shufflerServiceThread.start();
     }
 
@@ -63,6 +67,7 @@ public class KafkaServiceImpl implements KafkaService {
     public void stopSchedule() {
         logger.info("Stop schedule service");
         shufflerService.close();
+        shufflerServiceThread.interrupt();
         try {
             countDownLatch.await();
             logger.info("All service stopped");

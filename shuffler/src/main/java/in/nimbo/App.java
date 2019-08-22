@@ -5,8 +5,12 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jmx.JmxReporter;
 import in.nimbo.common.config.KafkaConfig;
 import in.nimbo.common.config.ProjectConfig;
+import in.nimbo.redis.RedisDAOImpl;
 import in.nimbo.service.kafka.KafkaService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +36,15 @@ public class App {
         initReporter(projectConfig);
         appLogger.info("Reporter started");
 
-        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig);
+        Config config = new Config();
+        config.useClusterServers()
+                .addNodeAddress("redis://slave-1:6379")
+                .addNodeAddress("redis://slave-2:6379")
+                .addNodeAddress("redis://slave-3:6379");
+        RedissonClient redis = Redisson.create(config);
+        RedisDAOImpl redisDAO = new RedisDAOImpl(redis);
+
+        KafkaService kafkaService = new KafkaServiceImpl(kafkaConfig, redisDAO);
         appLogger.info("Services started");
 
         appLogger.info("Application started");

@@ -13,9 +13,16 @@
 
     <properties>
         <main.basedir>${project.parent.basedir}</main.basedir>
+        <redisson.verison>3.11.2</redisson.verison>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.verison}</version>
+        </dependency>
+
         <dependency>
             <groupId>in.nimbo</groupId>
             <artifactId>common</artifactId>
@@ -27,27 +34,28 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.1</version>
                 <configuration>
-                    <outputDirectory>target/</outputDirectory>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
                     <archive>
                         <manifest>
                             <mainClass>in.nimbo.App</mainClass>
-                            <addClasspath>true</addClasspath>
                         </manifest>
-                        <manifestEntries>
-                            <Built-By>Me</Built-By>
-                            <Class-Path>../lib/*</Class-Path>
-                        </manifestEntries>
                     </archive>
-                    <excludes>
-                        <exclude>*.properties</exclude>
-                        <exclude>*.xml</exclude>
-                        <exclude>*.sh</exclude>
-                        <exclude>*.yaml</exclude>
-                    </excludes>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>assemble-all</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
 

@@ -21,7 +21,7 @@ import redis.clients.jedis.JedisCluster;
 
 import java.time.LocalDateTime;
 import java.util.Scanner;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 public class App {
     private static Logger cliLogger = LoggerFactory.getLogger("cli");
