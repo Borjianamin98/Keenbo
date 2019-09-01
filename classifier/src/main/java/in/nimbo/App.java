@@ -87,7 +87,11 @@ public class App {
         SparkSession spark = setSparkEsConfigs();
         JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
                 SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
-        System.out.println(elasticSearchRDD.collectAsMap().toString());
+        System.out.println(elasticSearchRDD.map(tuple2 -> {
+            Map<String, Object> map = tuple2._2;
+            map.put("id", tuple2._1);
+            return map;
+        }).collect());
 //        ClassifierService.classify(classifierConfig, spark, elasticSearchRDD);
         spark.stop();
     }

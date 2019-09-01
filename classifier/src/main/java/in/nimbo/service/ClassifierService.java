@@ -51,10 +51,14 @@ public class ClassifierService {
 
         JavaPairRDD<String, Double> predictionAndLabel =
                 features.toJavaRDD().mapToPair((Row p) -> new Tuple2<>(p.getString(0), model.predict(p.getAs(1))));
-//        System.out.println(predictionAndLabel.collect());
-//        predictionAndLabel;
-//        JavaPairRDD<String, Tuple2<, Object>, Double>> join = elasticSearchRDD.join(predictionAndLabel)
-//                .values();
+        JavaRDD<Object> join = elasticSearchRDD.join(predictionAndLabel)
+                .map(tuple2 -> {
+                    Map<String, Object> map = tuple2._2._1;
+                    map.put("id", tuple2._1);
+                    map.put("label", tuple2._2._2);
+                    return map;
+                });
+
 //        JavaEsSpark.saveToEs();
 
     }
