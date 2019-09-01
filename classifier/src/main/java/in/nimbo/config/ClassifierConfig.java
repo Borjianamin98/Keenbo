@@ -6,7 +6,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 public class ClassifierConfig {
     public enum MODE {
-        CRAWL, CLASSIFY
+        CRAWL, CLASSIFY, TRAIN
     }
 
     private static final String CONFIG_NAME = "classifier.properties";

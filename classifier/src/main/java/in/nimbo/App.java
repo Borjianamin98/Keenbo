@@ -1,6 +1,5 @@
 package in.nimbo;
 
-import com.cybozu.labs.langdetect.LangDetectException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -16,6 +15,7 @@ import in.nimbo.common.utility.SparkUtility;
 import in.nimbo.config.ClassifierConfig;
 import in.nimbo.entity.Category;
 import in.nimbo.service.ClassifierService;
+import in.nimbo.service.TrainService;
 import in.nimbo.service.CrawlerService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -34,18 +34,21 @@ import java.util.concurrent.TimeUnit;
 
 public class App {
     private static Logger logger = LoggerFactory.getLogger("classifier");
+    private static ClassifierConfig classifierConfig;
 
     public static void main(String[] args) throws IOException {
         ProjectConfig projectConfig = ProjectConfig.load();
-        ClassifierConfig classifierConfig = ClassifierConfig.load();
+        classifierConfig = ClassifierConfig.load();
         if (classifierConfig.getAppMode() == ClassifierConfig.MODE.CRAWL) {
-            runCrawler(classifierConfig, projectConfig);
+            runCrawler(projectConfig);
+        } else if (classifierConfig.getAppMode() == ClassifierConfig.MODE.TRAIN) {
+            runTrainService();
         } else if (classifierConfig.getAppMode() == ClassifierConfig.MODE.CLASSIFY) {
-            runClassifier(classifierConfig);
+            runClassifier();
         }
     }
 
-    private static void runCrawler(ClassifierConfig classifierConfig, ProjectConfig projectConfig) throws IOException {
+    private static void runCrawler(ProjectConfig projectConfig) throws IOException {
         LanguageDetectorUtility.loadLanguageDetector(logger);
 
         Cache<String, LocalDateTime> politenessCache = Caffeine.newBuilder().maximumSize(projectConfig.getCaffeineMaxSize())
@@ -72,15 +75,30 @@ public class App {
         Runtime.getRuntime().addShutdownHook(new Thread(kafkaService::stopSchedule));
     }
 
-    private static void runClassifier(ClassifierConfig classifierConfig) {
-        SparkSession spark = SparkUtility.getSpark(classifierConfig.getAppName(), true);
+    private static void runTrainService() {
+        SparkSession spark = setSparkEsConfigs();
+        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
+                SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
+        TrainService.extractModel(classifierConfig, spark, elasticSearchRDD);
+        spark.stop();
+    }
+
+    private static void runClassifier() {
+        SparkSession spark = setSparkEsConfigs();
+        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
+                SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
+        System.out.println(elasticSearchRDD.collectAsMap().toString());
+//        ClassifierService.classify(classifierConfig, spark, elasticSearchRDD);
+        spark.stop();
+    }
+
+    private static SparkSession setSparkEsConfigs() {
+        SparkSession spark = SparkUtility.getSpark(classifierConfig.getAppName() + "-"
+                + classifierConfig.getAppMode(), true);
         spark.sparkContext().conf().set("es.nodes", classifierConfig.getEsNodes());
         spark.sparkContext().conf().set("es.write.operation", classifierConfig.getEsWriteOperation());
         spark.sparkContext().conf().set("es.mapping.id", "id");
         spark.sparkContext().conf().set("es.index.auto.create", classifierConfig.getEsIndexAutoCreate());
-        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
-                SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
-        ClassifierService.extractModel(classifierConfig, spark, elasticSearchRDD);
-        spark.stop();
+        return spark;
     }
 }
