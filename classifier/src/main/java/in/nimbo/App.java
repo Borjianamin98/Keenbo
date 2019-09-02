@@ -19,7 +19,9 @@ import in.nimbo.service.TrainService;
 import in.nimbo.service.CrawlerService;
 import in.nimbo.service.kafka.KafkaServiceImpl;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.elasticsearch.spark.rdd.api.java.JavaEsSpark;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,14 +87,11 @@ public class App {
 
     private static void runClassifier() {
         SparkSession spark = setSparkEsConfigs();
-        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
-                SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
-        System.out.println(elasticSearchRDD.map(tuple2 -> {
-            Map<String, Object> map = tuple2._2;
-            map.put("id", tuple2._1);
-            return map;
-        }).collect());
-//        ClassifierService.classify(classifierConfig, spark, elasticSearchRDD);
+//        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD =
+//                SparkUtility.getElasticSearchRDD(spark, classifierConfig.getEsIndex(), classifierConfig.getEsType());
+        JavaSparkContext javaSparkContext = SparkUtility.getJavaSparkContext(spark);
+        JavaPairRDD<String, Map<String, Object>> elasticSearchRDD = JavaEsSpark.esRDD(javaSparkContext, "keen/page", "?size=100");
+        ClassifierService.classify(classifierConfig, spark, elasticSearchRDD);
         spark.stop();
     }
 

@@ -51,7 +51,7 @@ public class ClassifierService {
 
         JavaPairRDD<String, Double> predictionAndLabel =
                 features.toJavaRDD().mapToPair((Row p) -> new Tuple2<>(p.getString(0), model.predict(p.getAs(1))));
-        JavaRDD<Object> join = elasticSearchRDD.join(predictionAndLabel)
+        JavaRDD<Map<String, Object>> join = elasticSearchRDD.join(predictionAndLabel)
                 .map(tuple2 -> {
                     Map<String, Object> map = tuple2._2._1;
                     map.put("id", tuple2._1);
@@ -59,7 +59,8 @@ public class ClassifierService {
                     return map;
                 });
 
-//        JavaEsSpark.saveToEs();
+        System.out.println(join.collect().toString());
+//        JavaEsSpark.saveToEs(join, "");
 
     }
 }
