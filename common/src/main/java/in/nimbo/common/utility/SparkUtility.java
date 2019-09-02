@@ -28,15 +28,12 @@ public class SparkUtility {
     }
 
     public static SparkSession getSpark(String appName, boolean isLocal) {
-        System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
         SparkSession spark;
         if (isLocal) {
             spark = SparkSession.builder().appName(appName).master("local").getOrCreate();
         } else {
             spark = SparkSession.builder().appName(appName).getOrCreate();
         }
-        spark.sparkContext().conf().set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-        spark.sparkContext().conf().set("spark.kryo.registrationRequired", "true");
         spark.sparkContext().conf().set("spark.speculation", "false");
         spark.sparkContext().conf().set("spark.hadoop.mapreduce.map.speculative", "false");
         spark.sparkContext().conf().set("spark.hadoop.mapreduce.reduce.speculative", "false");
@@ -44,6 +41,9 @@ public class SparkUtility {
     }
 
     public static void registerKryoClasses(SparkSession sparkSession, Class[] kyroClasses) {
+        System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        sparkSession.sparkContext().conf().set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+        sparkSession.sparkContext().conf().set("spark.kryo.registrationRequired", "true");
         sparkSession.sparkContext().conf().registerKryoClasses(kyroClasses);
     }
 
